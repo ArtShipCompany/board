@@ -1,5 +1,3 @@
-// src/main/java/com/example/artship/board/model/User.java
-
 package com.example.artship.board.model;
 
 import jakarta.persistence.*;
