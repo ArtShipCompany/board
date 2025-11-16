@@ -1,5 +1,3 @@
-// src/main/java/com/example/artship/board/controller/UserController.java
-
 package com.example.artship.board.controller;
 
 import com.example.artship.board.model.User;
