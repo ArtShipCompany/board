@@ -1,13 +1,14 @@
 package com.example.artship.board.controller;
 
-import com.example.artship.board.model.BoardVersion;
-import com.example.artship.board.repository.BoardVersionRepository;
+import com.example.artship.board.dto.request.BoardVersionRequestDTO;
+import com.example.artship.board.dto.response.BoardVersionResponseDTO;
+import com.example.artship.board.service.BoardVersionService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,54 +17,43 @@ import java.util.Optional;
 public class BoardVersionController {
 
     @Autowired
-    private BoardVersionRepository boardVersionRepository;
+    private BoardVersionService boardVersionService;
 
     @GetMapping
-    public List<BoardVersion> getAllVersions() {
-        return boardVersionRepository.findAll();
+    public ResponseEntity<List<BoardVersionResponseDTO>> getAllVersions() {
+        List<BoardVersionResponseDTO> versions = boardVersionService.getAllVersions();
+        return ResponseEntity.ok(versions);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BoardVersion> getVersionById(@PathVariable Long id) {
-        Optional<BoardVersion> version = boardVersionRepository.findById(id);
+    public ResponseEntity<BoardVersionResponseDTO> getVersionById(@PathVariable Long id) {
+        Optional<BoardVersionResponseDTO> version = boardVersionService.getVersionById(id);
         return version.map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<BoardVersion> createVersion(@RequestBody BoardVersion version) {
-        version.setCreatedAt(LocalDateTime.now());
-
-        BoardVersion savedVersion = boardVersionRepository.save(version);
+    public ResponseEntity<BoardVersionResponseDTO> createVersion(
+            @Valid @RequestBody BoardVersionRequestDTO versionDTO) {
+        BoardVersionResponseDTO savedVersion = boardVersionService.createVersion(versionDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedVersion);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BoardVersion> updateVersion(@PathVariable Long id, @RequestBody BoardVersion versionDetails) {
-        Optional<BoardVersion> optionalVersion = boardVersionRepository.findById(id);
-
-        if (optionalVersion.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        BoardVersion version = optionalVersion.get();
-        version.setBoardId(versionDetails.getBoardId());
-        version.setUserId(versionDetails.getUserId());
-        version.setVersionNumber(versionDetails.getVersionNumber());
-        version.setDescription(versionDetails.getDescription());
-        version.setSnapshotData(versionDetails.getSnapshotData());
-        version.setCreatedAt(LocalDateTime.now());
-
-        BoardVersion updatedVersion = boardVersionRepository.save(version);
-        return ResponseEntity.ok(updatedVersion);
+    public ResponseEntity<BoardVersionResponseDTO> updateVersion(
+            @PathVariable Long id,
+            @Valid @RequestBody BoardVersionRequestDTO versionDTO) {
+        Optional<BoardVersionResponseDTO> updatedVersion = boardVersionService.updateVersion(id, versionDTO);
+        return updatedVersion.map(ResponseEntity::ok)
+                            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteVersion(@PathVariable Long id) {
-        if (!boardVersionRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        boolean deleted = boardVersionService.deleteVersion(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-        boardVersionRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
     }
 }
