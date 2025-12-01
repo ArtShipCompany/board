@@ -1,13 +1,14 @@
 package com.example.artship.board.controller;
 
-import com.example.artship.board.model.BoardLayer;
-import com.example.artship.board.repository.BoardLayerRepository;
+import com.example.artship.board.dto.request.BoardLayerRequestDTO;
+import com.example.artship.board.dto.response.BoardLayerResponseDTO;
+import com.example.artship.board.service.BoardLayerService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,54 +17,46 @@ import java.util.Optional;
 public class BoardLayerController {
 
     @Autowired
-    private BoardLayerRepository boardLayerRepository;
+    private BoardLayerService boardLayerService;
 
     @GetMapping
-    public List<BoardLayer> getAllLayers() {
-        return boardLayerRepository.findAll();
+    public ResponseEntity<List<BoardLayerResponseDTO>> getAllLayers() {
+        List<BoardLayerResponseDTO> layers = boardLayerService.getAllLayers();
+        return ResponseEntity.ok(layers);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BoardLayer> getLayerById(@PathVariable Long id) {
-        Optional<BoardLayer> layer = boardLayerRepository.findById(id);
+    public ResponseEntity<BoardLayerResponseDTO> getLayerById(@PathVariable Long id) {
+        Optional<BoardLayerResponseDTO> layer = boardLayerService.getLayerById(id);
         return layer.map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public ResponseEntity<BoardLayer> createLayer(@RequestBody BoardLayer layer) {
-        layer.setCreatedAt(LocalDateTime.now());
+    @GetMapping("/board/{boardId}")
+    public ResponseEntity<List<BoardLayerResponseDTO>> getLayersByBoardId(@PathVariable Long boardId) {
+        List<BoardLayerResponseDTO> layers = boardLayerService.getLayersByBoardId(boardId);
+        return ResponseEntity.ok(layers);
+    }
 
-        BoardLayer savedLayer = boardLayerRepository.save(layer);
+    @PostMapping
+    public ResponseEntity<BoardLayerResponseDTO> createLayer(@Valid @RequestBody BoardLayerRequestDTO layerDTO) {
+        BoardLayerResponseDTO savedLayer = boardLayerService.createLayer(layerDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedLayer);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BoardLayer> updateLayer(@PathVariable Long id, @RequestBody BoardLayer layerDetails) {
-        Optional<BoardLayer> optionalLayer = boardLayerRepository.findById(id);
-
-        if (optionalLayer.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        BoardLayer layer = optionalLayer.get();
-        layer.setBoardId(layerDetails.getBoardId());
-        layer.setName(layerDetails.getName());
-        layer.setOrderIndex(layerDetails.getOrderIndex());
-        layer.setOpacity(layerDetails.getOpacity());
-        layer.setIsVisible(layerDetails.getIsVisible());
-        layer.setCreatedAt(LocalDateTime.now()); // обновляем время
-
-        BoardLayer updatedLayer = boardLayerRepository.save(layer);
-        return ResponseEntity.ok(updatedLayer);
+    public ResponseEntity<BoardLayerResponseDTO> updateLayer(@PathVariable Long id, @Valid @RequestBody BoardLayerRequestDTO layerDTO) {
+        Optional<BoardLayerResponseDTO> updatedLayer = boardLayerService.updateLayer(id, layerDTO);
+        return updatedLayer.map(ResponseEntity::ok)
+                          .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLayer(@PathVariable Long id) {
-        if (!boardLayerRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        boolean deleted = boardLayerService.deleteLayer(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-        boardLayerRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
     }
 }
