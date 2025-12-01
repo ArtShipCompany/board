@@ -1,13 +1,14 @@
 package com.example.artship.board.controller;
 
-import com.example.artship.board.model.BrushPreset;
-import com.example.artship.board.repository.BrushPresetRepository;
+import com.example.artship.board.dto.request.BrushPresetRequestDTO;
+import com.example.artship.board.dto.response.BrushPresetResponseDTO;
+import com.example.artship.board.service.BrushPresetService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,61 +17,52 @@ import java.util.Optional;
 public class BrushPresetController {
 
     @Autowired
-    private BrushPresetRepository brushPresetRepository;
+    private BrushPresetService brushPresetService;
 
     @GetMapping
-    public List<BrushPreset> getAllPresets() {
-        return brushPresetRepository.findAll();
+    public ResponseEntity<List<BrushPresetResponseDTO>> getAllPresets() {
+        List<BrushPresetResponseDTO> presets = brushPresetService.getAllPresets();
+        return ResponseEntity.ok(presets);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BrushPreset> getPresetById(@PathVariable Long id) {
-        Optional<BrushPreset> preset = brushPresetRepository.findById(id);
+    public ResponseEntity<BrushPresetResponseDTO> getPresetById(@PathVariable Long id) {
+        Optional<BrushPresetResponseDTO> preset = brushPresetService.getPresetById(id);
         return preset.map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public ResponseEntity<BrushPreset> createPreset(@RequestBody BrushPreset preset) {
-        preset.setCreatedAt(LocalDateTime.now());
-        preset.setUpdatedAt(LocalDateTime.now());
+    @GetMapping("/user/{userId}")
+    public ResponseEntity<List<BrushPresetResponseDTO>> getPresetsByUserId(@PathVariable Long userId) {
+        List<BrushPresetResponseDTO> presets = brushPresetService.getPresetsByUserId(userId);
+        return ResponseEntity.ok(presets);
+    }
 
-        BrushPreset savedPreset = brushPresetRepository.save(preset);
+    @GetMapping("/public")
+    public ResponseEntity<List<BrushPresetResponseDTO>> getPublicPresets() {
+        List<BrushPresetResponseDTO> presets = brushPresetService.getPublicPresets();
+        return ResponseEntity.ok(presets);
+    }
+
+    @PostMapping
+    public ResponseEntity<BrushPresetResponseDTO> createPreset(@Valid @RequestBody BrushPresetRequestDTO presetDTO) {
+        BrushPresetResponseDTO savedPreset = brushPresetService.createPreset(presetDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedPreset);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BrushPreset> updatePreset(@PathVariable Long id, @RequestBody BrushPreset presetDetails) {
-        Optional<BrushPreset> optionalPreset = brushPresetRepository.findById(id);
-
-        if (optionalPreset.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        BrushPreset preset = optionalPreset.get();
-        preset.setUserId(presetDetails.getUserId());
-        preset.setName(presetDetails.getName());
-        preset.setBrushType(presetDetails.getBrushType());
-        preset.setSize(presetDetails.getSize());
-        preset.setOpacity(presetDetails.getOpacity());
-        preset.setFlow(presetDetails.getFlow());
-        preset.setHardness(presetDetails.getHardness());
-        preset.setSpacing(presetDetails.getSpacing());
-        preset.setColor(presetDetails.getColor());
-        preset.setTextureUrl(presetDetails.getTextureUrl());
-        preset.setIsPublic(presetDetails.getIsPublic());
-        preset.setUpdatedAt(LocalDateTime.now()); // обновляем время
-
-        BrushPreset updatedPreset = brushPresetRepository.save(preset);
-        return ResponseEntity.ok(updatedPreset);
+    public ResponseEntity<BrushPresetResponseDTO> updatePreset(@PathVariable Long id, @Valid @RequestBody BrushPresetRequestDTO presetDTO) {
+        Optional<BrushPresetResponseDTO> updatedPreset = brushPresetService.updatePreset(id, presetDTO);
+        return updatedPreset.map(ResponseEntity::ok)
+                            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePreset(@PathVariable Long id) {
-        if (!brushPresetRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        boolean deleted = brushPresetService.deletePreset(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-        brushPresetRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
     }
 }
