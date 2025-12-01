@@ -1,13 +1,14 @@
 package com.example.artship.board.controller;
 
-import com.example.artship.board.model.Board;
-import com.example.artship.board.repository.BoardRepository;
+import com.example.artship.board.dto.request.BoardRequestDTO;
+import com.example.artship.board.dto.response.BoardResponseDTO;
+import com.example.artship.board.service.BoardService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,56 +17,40 @@ import java.util.Optional;
 public class BoardController {
 
     @Autowired
-    private BoardRepository boardRepository;
+    private BoardService boardService;
 
     @GetMapping
-    public List<Board> getAllBoards() {
-        return boardRepository.findAll();
+    public ResponseEntity<List<BoardResponseDTO>> getAllBoards() {
+        List<BoardResponseDTO> boards = boardService.getAllBoards();
+        return ResponseEntity.ok(boards);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Board> getBoardById(@PathVariable Long id) {
-        Optional<Board> board = boardRepository.findById(id);
+    public ResponseEntity<BoardResponseDTO> getBoardById(@PathVariable Long id) {
+        Optional<BoardResponseDTO> board = boardService.getBoardById(id);
         return board.map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<Board> createBoard(@RequestBody Board board) {
-        LocalDateTime now = LocalDateTime.now();
-        board.setCreated_at(now);
-        board.setUpdated_at(now);
-
-        Board savedBoard = boardRepository.save(board);
+    public ResponseEntity<BoardResponseDTO> createBoard(@Valid @RequestBody BoardRequestDTO boardDTO) {
+        BoardResponseDTO savedBoard = boardService.createBoard(boardDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedBoard);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Board> updateBoard(@PathVariable Long id, @RequestBody Board boardDetails) {
-        Optional<Board> optionalBoard = boardRepository.findById(id);
-
-        if (optionalBoard.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Board board = optionalBoard.get();
-        board.setDescription(boardDetails.getDescription());
-        board.setWidth(boardDetails.getWidth());
-        board.setHeight(boardDetails.getHeight());
-        board.setBackground_color(boardDetails.getBackground_color());
-        board.setBackground_image(boardDetails.getBackground_image());
-        board.setUpdated_at(LocalDateTime.now());
-
-        Board updatedBoard = boardRepository.save(board);
-        return ResponseEntity.ok(updatedBoard);
+    public ResponseEntity<BoardResponseDTO> updateBoard(@PathVariable Long id, @Valid @RequestBody BoardRequestDTO boardDTO) {
+        Optional<BoardResponseDTO> updatedBoard = boardService.updateBoard(id, boardDTO);
+        return updatedBoard.map(ResponseEntity::ok)
+                          .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBoard(@PathVariable Long id) {
-        if (!boardRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        boolean deleted = boardService.deleteBoard(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-        boardRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
     }
 }
