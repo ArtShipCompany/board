@@ -1,13 +1,14 @@
 package com.example.artship.board.controller;
 
-import com.example.artship.board.model.BrushPresetCategory;
-import com.example.artship.board.repository.BrushPresetCategoryRepository;
+import com.example.artship.board.dto.request.BrushPresetCategoryRequestDTO;
+import com.example.artship.board.dto.response.BrushPresetCategoryResponseDTO;
+import com.example.artship.board.service.BrushPresetCategoryService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,51 +17,40 @@ import java.util.Optional;
 public class BrushPresetCategoryController {
 
     @Autowired
-    private BrushPresetCategoryRepository brushPresetCategoryRepository;
+    private BrushPresetCategoryService brushPresetCategoryService;
 
     @GetMapping
-    public List<BrushPresetCategory> getAllLinks() {
-        return brushPresetCategoryRepository.findAll();
+    public ResponseEntity<List<BrushPresetCategoryResponseDTO>> getAllLinks() {
+        List<BrushPresetCategoryResponseDTO> links = brushPresetCategoryService.getAllLinks();
+        return ResponseEntity.ok(links);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<BrushPresetCategory> getLinkById(@PathVariable Long id) {
-        Optional<BrushPresetCategory> link = brushPresetCategoryRepository.findById(id);
+    public ResponseEntity<BrushPresetCategoryResponseDTO> getLinkById(@PathVariable Long id) {
+        Optional<BrushPresetCategoryResponseDTO> link = brushPresetCategoryService.getLinkById(id);
         return link.map(ResponseEntity::ok)
                     .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<BrushPresetCategory> createLink(@RequestBody BrushPresetCategory link) {
-        link.setCreatedAt(LocalDateTime.now());
-
-        BrushPresetCategory savedLink = brushPresetCategoryRepository.save(link);
+    public ResponseEntity<BrushPresetCategoryResponseDTO> createLink(@Valid @RequestBody BrushPresetCategoryRequestDTO linkDTO) {
+        BrushPresetCategoryResponseDTO savedLink = brushPresetCategoryService.createLink(linkDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(savedLink);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<BrushPresetCategory> updateLink(@PathVariable Long id, @RequestBody BrushPresetCategory linkDetails) {
-        Optional<BrushPresetCategory> optionalLink = brushPresetCategoryRepository.findById(id);
-
-        if (optionalLink.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        BrushPresetCategory link = optionalLink.get();
-        link.setBrushPresetId(linkDetails.getBrushPresetId());
-        link.setCategoryId(linkDetails.getCategoryId());
-        link.setCreatedAt(LocalDateTime.now());
-
-        BrushPresetCategory updatedLink = brushPresetCategoryRepository.save(link);
-        return ResponseEntity.ok(updatedLink);
+    public ResponseEntity<BrushPresetCategoryResponseDTO> updateLink(@PathVariable Long id, @Valid @RequestBody BrushPresetCategoryRequestDTO linkDTO) {
+        Optional<BrushPresetCategoryResponseDTO> updatedLink = brushPresetCategoryService.updateLink(id, linkDTO);
+        return updatedLink.map(ResponseEntity::ok)
+                            .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteLink(@PathVariable Long id) {
-        if (!brushPresetCategoryRepository.existsById(id)) {
-            return ResponseEntity.notFound().build();
+        boolean deleted = brushPresetCategoryService.deleteLink(id);
+        if (deleted) {
+            return ResponseEntity.noContent().build();
         }
-        brushPresetCategoryRepository.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.notFound().build();
     }
 }
