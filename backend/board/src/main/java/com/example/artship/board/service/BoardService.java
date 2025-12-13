@@ -1,17 +1,18 @@
 package com.example.artship.board.service;
 
-import com.example.artship.board.dto.request.BoardRequestDTO;
-import com.example.artship.board.dto.response.BoardResponseDTO;
-import com.example.artship.board.model.Board;
-import com.example.artship.board.repository.BoardRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.example.artship.board.dto.request.BoardRequestDTO;
+import com.example.artship.board.dto.response.BoardResponseDTO;
+import com.example.artship.board.model.Board;
+import com.example.artship.board.repository.BoardRepository;
 
 @Service
 @Transactional
