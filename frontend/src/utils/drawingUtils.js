@@ -1,7 +1,7 @@
-export const drawLine = (ctx, line, lastPoint) => {
+export const drawLine = (ctx, line, lastPoint = null) => {
   const { points, color, width, type } = line
   
-  if (points.length < 1) return
+  if (points.length < 2) return
   
   ctx.beginPath()
   ctx.lineWidth = width

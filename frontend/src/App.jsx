@@ -4,11 +4,22 @@ import Toolbar from './components/Toolbar'
 import { DrawingProvider } from './hooks/useDrawing'
 
 function App() {
+  useEffect(() => {
+    boardApi.getMyBoard()
+      .then(board => {
+        console.log('Доска загружена:', board)
+      })
+      .catch(error => {
+        console.warn('Не удалось загрузить доску:', error)
+        boardApi.createEmptyBoard()
+      })
+  }, [])
+
   return (
     <DrawingProvider>
       <div className="app">
         <header className="app-header">
-          <h1>Drawing Board</h1>
+          <h1>ARTSHIP</h1>
         </header>
         <main className="app-main">
           <Toolbar />
