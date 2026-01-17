@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { sessionApi } from '../api/sessionApi';
 import { strokeApi } from '../api/strokeApi';
-import { boardApi } from '../api/boardSpi';
+import { boardApi } from '../api/boardApi';
+
 
 const initialState = {
   lines: [],
@@ -15,6 +16,7 @@ const initialState = {
   loaded: false,
 };
 
+
 const drawingReducer = (state, action) => {
   switch (action.type) {
     case 'LOAD_SESSION':
@@ -26,12 +28,14 @@ const drawingReducer = (state, action) => {
         loaded: true,
       };
 
+
     case 'ADD_STROKE':
       return {
         ...state,
         lines: [...state.lines, action.payload.stroke],
         strokeIds: [...state.strokeIds, action.payload.strokeId],
       };
+
 
     case 'REMOVE_LAST_STROKE':
       return {
@@ -40,18 +44,20 @@ const drawingReducer = (state, action) => {
         strokeIds: state.strokeIds.slice(0, -1),
       };
 
+
     case 'START_DRAWING':
       const newLine = {
         points: [action.payload],
-        color: action.payload.tool === 'eraser' ? '#ffffff' : action.payload.color,
-        width: action.payload.brushSize,
-        type: action.payload.tool,
+        color: state.tool === 'eraser' ? '#ffffff' : state.color,
+        width: state.brushSize,
+        type: state.tool,
       };
       return {
         ...state,
         currentLine: newLine,
         isDrawing: true,
       };
+
 
     case 'DRAW':
       if (!state.currentLine) return state;
@@ -63,30 +69,38 @@ const drawingReducer = (state, action) => {
         },
       };
 
+
     case 'STOP_DRAWING':
       return {
         ...state,
         isDrawing: false,
       };
 
+
     case 'SET_COLOR':
       return { ...state, color: action.payload };
+
 
     case 'SET_BRUSH_SIZE':
       return { ...state, brushSize: action.payload };
 
+
     case 'SET_TOOL':
       return { ...state, tool: action.payload };
 
+
     case 'CLEAR_CANVAS':
       return { ...state, lines: [], strokeIds: [], currentLine: null };
+
 
     default:
       return state;
   }
 };
 
+
 const DrawingContext = createContext();
+
 
 export const useDrawing = () => {
   const context = useContext(DrawingContext);
@@ -96,11 +110,13 @@ export const useDrawing = () => {
   return context;
 };
 
+
 export const DrawingProvider = ({ children }) => {
   const [state, dispatch] = useReducer(drawingReducer, initialState);
   const linesRef = useRef(state.lines);
   const strokeIdsRef = useRef(state.strokeIds);
   const sessionIdRef = useRef(state.sessionId);
+
 
   useEffect(() => {
     linesRef.current = state.lines;
@@ -108,10 +124,12 @@ export const DrawingProvider = ({ children }) => {
     sessionIdRef.current = state.sessionId;
   }, [state.lines, state.strokeIds, state.sessionId]);
 
+
   useEffect(() => {
     const init = async () => {
       try {
         const board = await boardApi.getMyBoard();
+
 
         let session = await sessionApi.getActiveSessionByBoard(board.id);
         if (!session) {
@@ -122,14 +140,16 @@ export const DrawingProvider = ({ children }) => {
           });
         }
 
+
         const strokes = await strokeApi.getStrokesBySession(session.id);
         const lines = strokes.map((s) => ({
           points: JSON.parse(s.points),
           color: s.color,
           width: s.size,
-          type: s.color === '#ffffff' ? 'eraser' : 'brush',
+          type: 'brush',
         }));
         const strokeIds = strokes.map((s) => s.id);
+
 
         dispatch({
           type: 'LOAD_SESSION',
@@ -140,8 +160,10 @@ export const DrawingProvider = ({ children }) => {
       }
     };
 
+
     init();
   }, []);
+
 
   useEffect(() => {
     if (
@@ -152,6 +174,9 @@ export const DrawingProvider = ({ children }) => {
     ) {
       const saveStroke = async () => {
         try {
+          console.log('[DRAWING] Начинаю сохранение штриха:', state.currentLine);
+
+
           const saved = await strokeApi.createStroke({
             sessionId: sessionIdRef.current,
             layerId: 1,
@@ -160,22 +185,29 @@ export const DrawingProvider = ({ children }) => {
             points: state.currentLine.points,
           });
 
+
           dispatch({
             type: 'ADD_STROKE',
             payload: { stroke: state.currentLine, strokeId: saved.id },
           });
+
+
+          console.log('[DRAWING] Штрих добавлен в состояние');
         } catch (err) {
-          console.error('Ошибка сохранения штриха:', err);
+          console.error('[DRAWING ERROR] Ошибка при сохранении штриха:', err);
         }
       };
+
 
       saveStroke();
     }
   }, [state.isDrawing, state.currentLine, state.loaded]);
 
+
   const handleClearCanvas = () => {
     dispatch({ type: 'CLEAR_CANVAS' });
   };
+
 
   const handleUndo = async () => {
     if (strokeIdsRef.current.length === 0) return;
@@ -187,6 +219,7 @@ export const DrawingProvider = ({ children }) => {
       console.error('Ошибка отмены:', err);
     }
   };
+
 
   return (
     <DrawingContext.Provider
