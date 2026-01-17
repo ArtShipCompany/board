@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import DrawingBoard from './components/DrawingBoard'
 import Toolbar from './components/Toolbar'
 import { DrawingProvider } from './hooks/useDrawing'
+import { boardApi } from './api/boardApi';
 
 function App() {
   useEffect(() => {

@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
 import { sessionApi } from '../api/sessionApi';
 import { strokeApi } from '../api/strokeApi';
-import { boardApi } from '../api/boardSpi';
+import { boardApi } from '../api/boardApi';
 
 const initialState = {
   lines: [],
@@ -43,9 +43,9 @@ const drawingReducer = (state, action) => {
     case 'START_DRAWING':
       const newLine = {
         points: [action.payload],
-        color: action.payload.tool === 'eraser' ? '#ffffff' : action.payload.color,
-        width: action.payload.brushSize,
-        type: action.payload.tool,
+        color: state.tool === 'eraser' ? '#ffffff' : state.color,
+        width: state.brushSize,
+        type: state.tool,
       };
       return {
         ...state,
@@ -127,7 +127,7 @@ export const DrawingProvider = ({ children }) => {
           points: JSON.parse(s.points),
           color: s.color,
           width: s.size,
-          type: s.color === '#ffffff' ? 'eraser' : 'brush',
+          type: 'brush',
         }));
         const strokeIds = strokes.map((s) => s.id);
 
@@ -152,6 +152,8 @@ export const DrawingProvider = ({ children }) => {
     ) {
       const saveStroke = async () => {
         try {
+          console.log('[DRAWING] Начинаю сохранение штриха:', state.currentLine);
+
           const saved = await strokeApi.createStroke({
             sessionId: sessionIdRef.current,
             layerId: 1,
@@ -164,8 +166,10 @@ export const DrawingProvider = ({ children }) => {
             type: 'ADD_STROKE',
             payload: { stroke: state.currentLine, strokeId: saved.id },
           });
+
+          console.log('[DRAWING] Штрих добавлен в состояние');
         } catch (err) {
-          console.error('Ошибка сохранения штриха:', err);
+          console.error('[DRAWING ERROR] Ошибка при сохранении штриха:', err);
         }
       };
 
