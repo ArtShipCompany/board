@@ -28,6 +28,8 @@ export const drawLine = (ctx, line, lastPoint = null) => {
   
   ctx.stroke()
   ctx.closePath()
+  
+  ctx.globalCompositeOperation = 'source-over'
 }
 
 export const clearCanvas = (ctx, canvas) => {
@@ -36,9 +38,18 @@ export const clearCanvas = (ctx, canvas) => {
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
 
-export const redrawCanvas = (ctx, canvas, lines) => {
+export const redrawCanvas = (ctx, canvas, lines, isReplaying = false) => {
   clearCanvas(ctx, canvas)
-  lines.forEach(line => {
-    drawLine(ctx, line)
-  })
+  
+  if (isReplaying) {
+    lines.forEach(line => {
+      if (line.type !== 'eraser') {
+        drawLine(ctx, line)
+      }
+    })
+  } else {
+    lines.forEach(line => {
+      drawLine(ctx, line)
+    })
+  }
 }
