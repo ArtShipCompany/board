@@ -174,9 +174,6 @@ export const DrawingProvider = ({ children }) => {
     ) {
       const saveStroke = async () => {
         try {
-          console.log('[DRAWING] Начинаю сохранение штриха:', state.currentLine);
-
-
           const saved = await strokeApi.createStroke({
             sessionId: sessionIdRef.current,
             layerId: 1,
@@ -190,11 +187,8 @@ export const DrawingProvider = ({ children }) => {
             type: 'ADD_STROKE',
             payload: { stroke: state.currentLine, strokeId: saved.id },
           });
-
-
-          console.log('[DRAWING] Штрих добавлен в состояние');
         } catch (err) {
-          console.error('[DRAWING ERROR] Ошибка при сохранении штриха:', err);
+          console.error('Ошибка при сохранении штриха:', err);
         }
       };
 
