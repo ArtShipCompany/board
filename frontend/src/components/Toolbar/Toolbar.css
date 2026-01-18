@@ -55,7 +55,6 @@
   font-size: 1.25rem;
 }
 
-/* Секция выбора цвета */
 .color-picker-section {
   position: relative;
 }
@@ -101,7 +100,6 @@
   margin-left: auto;
 }
 
-/* Модальное окно выбора цвета */
 .color-picker-modal {
   position: absolute;
   top: calc(100% + 5px);
@@ -287,7 +285,6 @@
   transform: scale(1.1);
 }
 
-/* Кнопка закрытия */
 .close-picker-button {
   width: 100%;
   padding: 0.5rem;
@@ -305,7 +302,6 @@
   background-color: #3182ce;
 }
 
-/* Остальные стили остаются без изменений */
 .brush-sizes {
   display: flex;
   gap: 0.5rem;
