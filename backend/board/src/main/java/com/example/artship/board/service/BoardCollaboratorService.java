@@ -75,7 +75,7 @@ public class BoardCollaboratorService {
         if (boardCollaboratorRepository.existsByBoardIdAndUserId(dto.getBoardId(), dto.getUserId())) {
             throw new RuntimeException("Пользователь уже является сотрудником этой доски");
         }
-        
+
         BoardCollaborator collaborator = convertToEntity(dto);
         BoardCollaborator savedCollaborator = boardCollaboratorRepository.save(collaborator);
         return convertToDTO(savedCollaborator);
@@ -83,7 +83,7 @@ public class BoardCollaboratorService {
 
     public Optional<BoardCollaboratorResponseDTO> updateCollaborator(Long id, BoardCollaboratorRequestDTO dto) {
         Optional<BoardCollaborator> optionalCollaborator = boardCollaboratorRepository.findById(id);
-        
+
         if (optionalCollaborator.isEmpty()) {
             return Optional.empty();
         }
@@ -108,11 +108,11 @@ public class BoardCollaboratorService {
 
     public boolean removeCollaboratorFromBoard(Long boardId, Long userId) {
         Optional<BoardCollaborator> optionalCollaborator = boardCollaboratorRepository.findByBoardIdAndUserId(boardId, userId);
-        
+
         if (optionalCollaborator.isEmpty()) {
             return false;
         }
-        
+
         boardCollaboratorRepository.delete(optionalCollaborator.get());
         return true;
     }
@@ -127,11 +127,11 @@ public class BoardCollaboratorService {
 
     public boolean hasPermission(Long boardId, Long userId, String requiredPermission) {
         Optional<BoardCollaborator> optionalCollaborator = boardCollaboratorRepository.findByBoardIdAndUserId(boardId, userId);
-        
+
         if (optionalCollaborator.isEmpty()) {
             return false;
         }
-        
+
         String permission = optionalCollaborator.get().getPermission();
         if ("admin".equals(requiredPermission)) {
             return "admin".equals(permission);
