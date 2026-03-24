@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import DrawingBoard from './components/DrawingBoard'
 import Toolbar from './components/Toolbar'
 import { DrawingProvider } from './hooks/useDrawing'

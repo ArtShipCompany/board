@@ -1,4 +1,6 @@
-export const drawLine = (ctx, line, lastPoint = null) => {
+import { Line, Point } from '../types/drawing';
+
+export const drawLine = (ctx: CanvasRenderingContext2D, line: Line, lastPoint: Point | null = null) => {
   const { points, color, width, type } = line
   
   if (points.length < 2) return
@@ -32,13 +34,13 @@ export const drawLine = (ctx, line, lastPoint = null) => {
   ctx.globalCompositeOperation = 'source-over'
 }
 
-export const clearCanvas = (ctx, canvas) => {
+export const clearCanvas = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, backgroundColor: string = '#ffffff') => {
   ctx.clearRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = '#ffffff'
+  ctx.fillStyle = backgroundColor
   ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
 
-export const redrawCanvas = (ctx, canvas, lines, isReplaying = false) => {
+export const redrawCanvas = (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, lines: Line[], isReplaying: boolean = false) => {
   clearCanvas(ctx, canvas)
   
   if (isReplaying) {
