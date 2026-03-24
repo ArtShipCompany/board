@@ -1,10 +1,34 @@
-import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, ReactNode } from 'react';
+import { Line, Point } from '../types/drawing';
 import { sessionApi } from '../api/sessionApi';
 import { strokeApi } from '../api/strokeApi';
 import { boardApi } from '../api/boardApi';
 
+interface DrawingState {
+  lines: Line[];
+  strokeIds: number[];
+  sessionId: number | null;
+  currentLine: Line | null;
+  color: string;
+  brushSize: number;
+  tool: 'brush' | 'eraser';
+  isDrawing: boolean;
+  loaded: boolean;
+}
 
-const initialState = {
+type DrawingAction =
+  | { type: 'LOAD_SESSION'; payload: { lines: Line[]; strokeIds: number[]; sessionId: number } }
+  | { type: 'ADD_STROKE'; payload: { stroke: Line; strokeId: number } }
+  | { type: 'REMOVE_LAST_STROKE' }
+  | { type: 'START_DRAWING'; payload: Point }
+  | { type: 'DRAW'; payload: Point }
+  | { type: 'STOP_DRAWING' }
+  | { type: 'SET_COLOR'; payload: string }
+  | { type: 'SET_BRUSH_SIZE'; payload: number }
+  | { type: 'SET_TOOL'; payload: 'brush' | 'eraser' }
+  | { type: 'CLEAR_CANVAS' };
+
+const initialState: DrawingState = {
   lines: [],
   strokeIds: [],
   sessionId: null,
@@ -16,8 +40,7 @@ const initialState = {
   loaded: false,
 };
 
-
-const drawingReducer = (state, action) => {
+const drawingReducer = (state: DrawingState, action: DrawingAction): DrawingState => {
   switch (action.type) {
     case 'LOAD_SESSION':
       return {
@@ -28,14 +51,12 @@ const drawingReducer = (state, action) => {
         loaded: true,
       };
 
-
     case 'ADD_STROKE':
       return {
         ...state,
         lines: [...state.lines, action.payload.stroke],
         strokeIds: [...state.strokeIds, action.payload.strokeId],
       };
-
 
     case 'REMOVE_LAST_STROKE':
       return {
@@ -44,9 +65,8 @@ const drawingReducer = (state, action) => {
         strokeIds: state.strokeIds.slice(0, -1),
       };
 
-
     case 'START_DRAWING':
-      const newLine = {
+      const newLine: Line = {
         points: [action.payload],
         color: state.tool === 'eraser' ? '#ffffff' : state.color,
         width: state.brushSize,
@@ -58,7 +78,6 @@ const drawingReducer = (state, action) => {
         isDrawing: true,
       };
 
-
     case 'DRAW':
       if (!state.currentLine) return state;
       return {
@@ -69,54 +88,44 @@ const drawingReducer = (state, action) => {
         },
       };
 
-
     case 'STOP_DRAWING':
       return {
         ...state,
         isDrawing: false,
       };
 
-
     case 'SET_COLOR':
       return { ...state, color: action.payload };
-
 
     case 'SET_BRUSH_SIZE':
       return { ...state, brushSize: action.payload };
 
-
     case 'SET_TOOL':
       return { ...state, tool: action.payload };
 
-
     case 'CLEAR_CANVAS':
       return { ...state, lines: [], strokeIds: [], currentLine: null };
-
 
     default:
       return state;
   }
 };
 
+interface DrawingContextType {
+  state: DrawingState;
+  dispatch: React.Dispatch<DrawingAction>;
+  handleUndo: () => Promise<void>;
+  handleClearCanvas: () => void;
+}
 
-const DrawingContext = createContext();
+const DrawingContext = createContext<DrawingContextType | undefined>(undefined);
 
-
-export const useDrawing = () => {
-  const context = useContext(DrawingContext);
-  if (!context) {
-    throw new Error('useDrawing must be used within a DrawingProvider');
-  }
-  return context;
-};
-
-
-export const DrawingProvider = ({ children }) => {
+export const DrawingProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(drawingReducer, initialState);
-  const linesRef = useRef(state.lines);
-  const strokeIdsRef = useRef(state.strokeIds);
-  const sessionIdRef = useRef(state.sessionId);
-
+  
+  const linesRef = useRef<Line[]>(state.lines);
+  const strokeIdsRef = useRef<number[]>(state.strokeIds);
+  const sessionIdRef = useRef<number | null>(state.sessionId);
 
   useEffect(() => {
     linesRef.current = state.lines;
@@ -124,14 +133,12 @@ export const DrawingProvider = ({ children }) => {
     sessionIdRef.current = state.sessionId;
   }, [state.lines, state.strokeIds, state.sessionId]);
 
-
   useEffect(() => {
     const init = async () => {
       try {
         const board = await boardApi.getMyBoard();
-
-
         let session = await sessionApi.getActiveSessionByBoard(board.id);
+        
         if (!session) {
           session = await sessionApi.createSession({
             boardId: board.id,
@@ -140,16 +147,14 @@ export const DrawingProvider = ({ children }) => {
           });
         }
 
-
         const strokes = await strokeApi.getStrokesBySession(session.id);
-        const lines = strokes.map((s) => ({
+        const lines: Line[] = strokes.map((s) => ({
           points: JSON.parse(s.points),
           color: s.color,
           width: s.size,
           type: 'brush',
         }));
         const strokeIds = strokes.map((s) => s.id);
-
 
         dispatch({
           type: 'LOAD_SESSION',
@@ -160,52 +165,50 @@ export const DrawingProvider = ({ children }) => {
       }
     };
 
-
     init();
   }, []);
 
-
   useEffect(() => {
+    const lineToSave = state.currentLine;
+
     if (
       !state.isDrawing &&
-      state.currentLine &&
+      lineToSave &&
       state.loaded &&
       sessionIdRef.current
     ) {
       const saveStroke = async () => {
         try {
           const saved = await strokeApi.createStroke({
-            sessionId: sessionIdRef.current,
+            sessionId: sessionIdRef.current!,
             layerId: 1,
-            color: state.currentLine.color,
-            size: state.currentLine.width,
-            points: state.currentLine.points,
+            color: lineToSave.color,
+            size: lineToSave.width,
+            points: lineToSave.points,
           });
-
 
           dispatch({
             type: 'ADD_STROKE',
-            payload: { stroke: state.currentLine, strokeId: saved.id },
+            payload: { stroke: lineToSave, strokeId: saved.id },
           });
         } catch (err) {
           console.error('Ошибка при сохранении штриха:', err);
         }
       };
 
-
       saveStroke();
     }
   }, [state.isDrawing, state.currentLine, state.loaded]);
-
 
   const handleClearCanvas = () => {
     dispatch({ type: 'CLEAR_CANVAS' });
   };
 
-
   const handleUndo = async () => {
-    if (strokeIdsRef.current.length === 0) return;
-    const lastId = strokeIdsRef.current[strokeIdsRef.current.length - 1];
+    const currentIds = strokeIdsRef.current;
+    if (currentIds.length === 0) return;
+    
+    const lastId = currentIds[currentIds.length - 1];
     try {
       await strokeApi.deleteStroke(lastId);
       dispatch({ type: 'REMOVE_LAST_STROKE' });
@@ -213,7 +216,6 @@ export const DrawingProvider = ({ children }) => {
       console.error('Ошибка отмены:', err);
     }
   };
-
 
   return (
     <DrawingContext.Provider
@@ -227,4 +229,10 @@ export const DrawingProvider = ({ children }) => {
       {children}
     </DrawingContext.Provider>
   );
+};
+
+export const useDrawing = () => {
+  const context = useContext(DrawingContext);
+  if (!context) throw new Error('useDrawing must be used within a DrawingProvider');
+  return context;
 };
