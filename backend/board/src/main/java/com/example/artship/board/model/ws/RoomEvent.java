@@ -14,18 +14,18 @@ import lombok.NoArgsConstructor;
 public class RoomEvent {
     private String type;
     private String roomId;
-    private String userId;
-    private String displayName;
-    private List<Participant> participants;
+    private String visitorId;
+    private String visitorName;
+    private String color;
+    private List<Visitor> visitors;
     
     @Data
     @Builder
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Participant {
-        private String userId;
-        private String displayName;
+    public static class Visitor {
+        private String visitorId;
+        private String visitorName;
         private String color;
-        private boolean isOwner;
     }
 }

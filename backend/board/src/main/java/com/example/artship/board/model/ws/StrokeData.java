@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class StrokeData {
     private String strokeId;
-    private String userId;
+    private String visitorId;
     private String roomId;
     private String type;
 

@@ -10,6 +10,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class LeaveRequest {
-    private String userId;
+    private String visitorId;
     private String roomId;
 }

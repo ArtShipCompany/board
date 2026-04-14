@@ -10,9 +10,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CursorUpdate {
-    private String userId;
+    private String visitorId;
     private String roomId;
-    private String displayName;
+    private String visitorName;
     private String color;
     private double x;
     private double y;

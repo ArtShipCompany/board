@@ -10,8 +10,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class JoinRequest {
-    private String userId;
+    private String visitorId;
     private String roomId;
-    private String displayName;
+    private String visitorName;
     private String color;
 }
