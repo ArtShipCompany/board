@@ -1,0 +1,20 @@
+.network-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background-color: #f56565;
+  color: #ffffff;
+  text-align: center;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  font-family: system-ui, -apple-system, sans-serif;
+  pointer-events: none;
+}
