@@ -1,24 +1,27 @@
 package com.example.artship.board.service;
 
-import com.example.artship.board.dto.request.StrokeRequestDTO;
-import com.example.artship.board.dto.response.StrokeResponseDTO;
-import com.example.artship.board.model.Stroke;
-import com.example.artship.board.repository.StrokeRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
+
+import com.example.artship.board.dto.request.StrokeRequestDTO;
+import com.example.artship.board.dto.response.StrokeResponseDTO;
+import com.example.artship.board.model.Stroke;
+import com.example.artship.board.repository.StrokeRepository;
+
 @Service
-@Transactional
 public class StrokeService {
 
     @Autowired
     private StrokeRepository strokeRepository;
+    
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private StrokeResponseDTO convertToDTO(Stroke stroke) {
         StrokeResponseDTO dto = new StrokeResponseDTO();
@@ -60,38 +63,48 @@ public class StrokeService {
     }
 
     public StrokeResponseDTO createStroke(StrokeRequestDTO strokeDTO) {
-        Stroke stroke = convertToEntity(strokeDTO);
-        Stroke savedStroke = strokeRepository.save(stroke);
-        return convertToDTO(savedStroke);
+        return transactionTemplate.execute(status -> {
+            Stroke stroke = convertToEntity(strokeDTO);
+            Stroke savedStroke = strokeRepository.save(stroke);
+            strokeRepository.flush();
+            System.out.println("=== STROKE SAVED WITH ID: " + savedStroke.getId() + " ===");
+            return convertToDTO(savedStroke);
+        });
     }
 
     public Optional<StrokeResponseDTO> updateStroke(Long id, StrokeRequestDTO strokeDTO) {
-        Optional<Stroke> optionalStroke = strokeRepository.findById(id);
-        
-        if (optionalStroke.isEmpty()) {
-            return Optional.empty();
-        }
+        return transactionTemplate.execute(status -> {
+            Optional<Stroke> optionalStroke = strokeRepository.findById(id);
+            
+            if (optionalStroke.isEmpty()) {
+                return Optional.empty();
+            }
 
-        Stroke stroke = optionalStroke.get();
-        stroke.setSessionId(strokeDTO.getSessionId());
-        stroke.setBrushPresetId(strokeDTO.getBrushPresetId());
-        stroke.setLayerId(strokeDTO.getLayerId());
-        stroke.setColor(strokeDTO.getColor());
-        stroke.setSize(strokeDTO.getSize());
-        stroke.setOpacity(strokeDTO.getOpacity());
-        stroke.setPoints(strokeDTO.getPoints());
-        stroke.setCreatedAt(LocalDateTime.now());
+            Stroke stroke = optionalStroke.get();
+            stroke.setSessionId(strokeDTO.getSessionId());
+            stroke.setBrushPresetId(strokeDTO.getBrushPresetId());
+            stroke.setLayerId(strokeDTO.getLayerId());
+            stroke.setColor(strokeDTO.getColor());
+            stroke.setSize(strokeDTO.getSize());
+            stroke.setOpacity(strokeDTO.getOpacity());
+            stroke.setPoints(strokeDTO.getPoints());
+            stroke.setCreatedAt(LocalDateTime.now());
 
-        Stroke updatedStroke = strokeRepository.save(stroke);
-        return Optional.of(convertToDTO(updatedStroke));
+            Stroke updatedStroke = strokeRepository.save(stroke);
+            strokeRepository.flush();
+            return Optional.of(convertToDTO(updatedStroke));
+        });
     }
 
     public boolean deleteStroke(Long id) {
-        if (!strokeRepository.existsById(id)) {
-            return false;
-        }
-        strokeRepository.deleteById(id);
-        return true;
+        return transactionTemplate.execute(status -> {
+            if (!strokeRepository.existsById(id)) {
+                return false;
+            }
+            strokeRepository.deleteById(id);
+            strokeRepository.flush();
+            return true;
+        });
     }
     
     public List<StrokeResponseDTO> getStrokesBySessionId(Long sessionId) {

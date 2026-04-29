@@ -8,6 +8,15 @@ export default defineConfig({
     host: '0.0.0.0',
     hmr: {
       clientPort: 5173,
+      host: 'localhost'
+    },
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080/api',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path
+      }
     }
   }
 })
