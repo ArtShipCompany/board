@@ -13,7 +13,7 @@ const DrawingBoard: React.FC = () => {
   const isOnline = useNetworkStatus();
   const containerRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-  const [cursorPos, setCursorPos] = useState<{x: number, y: number} | null>(null);
+  const [cursorPos, setCursorPos] = useState<{ x: number, y: number } | null>(null);
 
   useEffect(() => {
     dispatch(initBoard());
@@ -37,15 +37,21 @@ const DrawingBoard: React.FC = () => {
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
     if (pos) {
-        dispatch(draw(pos));
-        setCursorPos(pos);
+      dispatch(draw(pos));
+      setCursorPos(pos);
     }
   };
 
   const handleMouseUp = async () => {
+    console.log('[DrawingBoard] mouse up:', {
+      currentLine,
+      sessionId,
+      isOnline,
+    });
+    
     if (!currentLine || !sessionId) {
-        dispatch(stopDrawing());
-        return;
+      dispatch(stopDrawing());
+      return;
     }
 
     const tempId = crypto.randomUUID();
@@ -104,7 +110,7 @@ const DrawingBoard: React.FC = () => {
               }
             />
           ))}
-          
+
           {currentLine && (
             <KonvaLine
               points={currentLine.points as any}

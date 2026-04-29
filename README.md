@@ -1,5 +1,20 @@
 # BOARD
 
+## Start project
+```
+docker compose up -d --build
+```
+
+## Swagger-UI
+```
+http://localhost:8081/swagger-ui/index.html
+```
+
+## API-Docs
+```
+http://localhost:8081/v3/api-docs
+```
+
 ## Setup backend
 ```bash
 cd backend

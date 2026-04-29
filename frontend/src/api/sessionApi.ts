@@ -1,6 +1,6 @@
 import { DrawingSession } from '../types/drawing';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8081/api').replace(/\/$/, '');
 
 export type CreateSessionInput = Pick<DrawingSession, 'boardId' | 'userId' | 'layerId'> & {
   brushPresetId?: number;
@@ -8,14 +8,14 @@ export type CreateSessionInput = Pick<DrawingSession, 'boardId' | 'userId' | 'la
 
 export const sessionApi = {
   async getActiveSessionByBoard(boardId: number): Promise<DrawingSession | null> {
-    const res = await fetch(`${API_BASE_URL}/api/drawing-sessions/board/${boardId}`);
+    const res = await fetch(`${API_BASE_URL}/drawing-sessions/board/${boardId}`);
     if (!res.ok) throw new Error('Ошибка загрузки сессий');
     const sessions = await res.json();
     return sessions.length > 0 ? sessions[0] : null;
   },
 
   async createSession({ boardId, userId, layerId, brushPresetId = 1 }: CreateSessionInput): Promise<DrawingSession> {
-    const res = await fetch(`${API_BASE_URL}/api/drawing-sessions`, {
+    const res = await fetch(`${API_BASE_URL}/drawing-sessions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

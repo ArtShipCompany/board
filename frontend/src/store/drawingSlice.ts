@@ -28,20 +28,55 @@ const initialState: DrawingState = {
   pendingStrokes: [],
 };
 
+function pointsToKonvaPoints(points: any): number[] {
+  if (!points) return [];
+
+  if (typeof points === 'string') {
+    try {
+      points = JSON.parse(points);
+    } catch {
+      return [];
+    }
+  }
+
+  if (Array.isArray(points) && points.length > 0 && typeof points[0] === 'number') {
+    return points;
+  }
+
+  if (Array.isArray(points)) {
+    return points.flatMap((p) => [Number(p.x), Number(p.y)]);
+  }
+
+  return [];
+}
+
 export const initBoard = createAsyncThunk('drawing/initBoard', async () => {
   const board = await boardApi.getMyBoard();
+
   let session = await sessionApi.getActiveSessionByBoard(board.id);
+
   if (!session) {
-    session = await sessionApi.createSession({ boardId: board.id, userId: 1, layerId: 1 });
+    session = await sessionApi.createSession({
+      boardId: board.id,
+      userId: 1,
+      layerId: 1,
+    });
   }
+
   const strokes = await strokeApi.getStrokesBySession(session.id);
-  const lines: Line[] = strokes.map(s => ({
-    points: JSON.parse(s.points),
+
+  const lines: Line[] = strokes.map((s) => ({
+    points: pointsToKonvaPoints(s.points) as any,
     color: s.color,
     width: s.size,
     type: 'brush',
   }));
-  return { lines, strokeIds: strokes.map(s => s.id), sessionId: session.id };
+
+  return {
+    lines,
+    strokeIds: strokes.map((s) => s.id),
+    sessionId: session.id,
+  };
 });
 
 const drawingSlice = createSlice({
@@ -94,12 +129,20 @@ const drawingSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
-    builder.addCase(initBoard.fulfilled, (state, action) => {
-      state.lines = action.payload.lines;
-      state.strokeIds = action.payload.strokeIds;
-      state.sessionId = action.payload.sessionId;
-      state.status = 'idle';
-    });
+    builder
+      .addCase(initBoard.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(initBoard.fulfilled, (state, action) => {
+        state.lines = action.payload.lines;
+        state.strokeIds = action.payload.strokeIds;
+        state.sessionId = action.payload.sessionId;
+        state.status = 'idle';
+      })
+      .addCase(initBoard.rejected, (state, action) => {
+        state.status = 'failed';
+        console.error('[drawingSlice] initBoard failed:', action.error);
+      });
   }
 });
 
@@ -136,5 +179,5 @@ export const syncPendingStrokes = createAsyncThunk(
   }
 );
 
-export const { setTool, setColor, setBrushSize, startDrawing, draw, stopDrawing, addSavedStroke, undo, clear, queueStroke, removeFromQueue  } = drawingSlice.actions;
+export const { setTool, setColor, setBrushSize, startDrawing, draw, stopDrawing, addSavedStroke, undo, clear, queueStroke, removeFromQueue } = drawingSlice.actions;
 export default drawingSlice.reducer;
