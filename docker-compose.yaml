@@ -47,6 +47,7 @@ services:
       - "5173:5173"
     environment:
       VITE_API_URL: http://localhost:8081/api
+      VITE_WS_URL: http://localhost:8081/ws
     extra_hosts:
       - "host.docker.internal:host-gateway"
     volumes:
