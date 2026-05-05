@@ -26,11 +26,10 @@ public class DrawingWebSocketController {
     private final ConcurrentHashMap<String, RoomState> rooms = new ConcurrentHashMap<>();
     private static final int MAX_VISITORS = 10;
 
-    @MessageMapping("/room.join")
+    @MessageMapping("/room/{roomId}/join")
     @SendTo("/topic/room/{roomId}")
-    public RoomEvent joinRoom(@DestinationVariable String roomId, 
-                              @Payload JoinRequest request) {
-        
+    public RoomEvent joinRoom(@DestinationVariable String roomId, @Payload JoinRequest request) {
+
         RoomState room = rooms.computeIfAbsent(roomId, k -> new RoomState());
 
         if (room.getVisitors().size() >= MAX_VISITORS) {
@@ -45,12 +44,12 @@ public class DrawingWebSocketController {
                 .visitorName(request.getVisitorName())
                 .color(request.getColor())
                 .build();
-        
+
         room.getVisitors().put(request.getVisitorId(), visitor);
-        
-        log.info("Visitor {} ({}) joined room {}", 
-                 request.getVisitorName(), request.getVisitorId(), roomId);
-        
+
+        log.info("Visitor {} ({}) joined room {}",
+                request.getVisitorName(), request.getVisitorId(), roomId);
+
         return RoomEvent.builder()
                 .type("visitor_joined")
                 .roomId(roomId)
@@ -61,35 +60,28 @@ public class DrawingWebSocketController {
                 .build();
     }
 
-    @MessageMapping("/cursor.update")
+    @MessageMapping("/room/{roomId}/cursor")
     @SendTo("/topic/room/{roomId}")
-    public CursorUpdate updateCursor(@DestinationVariable String roomId,
-                                     @Payload CursorUpdate update) {
+    public CursorUpdate updateCursor(@DestinationVariable String roomId, @Payload CursorUpdate update) {
         return update;
     }
 
-    @MessageMapping("/stroke.draw")
+    @MessageMapping("/room/{roomId}/stroke")
     @SendTo("/topic/room/{roomId}")
-    public StrokeData drawStroke(@DestinationVariable String roomId,
-                                 @Payload StrokeData stroke) {
-        log.debug("Stroke from {}: {} points", 
-                  stroke.getVisitorId(),
-                  stroke.getPoints() != null ? stroke.getPoints().size() : 0);
+    public StrokeData drawStroke(@DestinationVariable String roomId, @Payload StrokeData stroke) {
         return stroke;
     }
 
-    @MessageMapping("/action.execute")
+    @MessageMapping("/room/{roomId}/action")
     @SendTo("/topic/room/{roomId}")
-    public ActionData executeAction(@DestinationVariable String roomId,
-                                    @Payload ActionData action) {
+    public ActionData executeAction(@DestinationVariable String roomId, @Payload ActionData action) {
         return action;
     }
 
-    @MessageMapping("/room.leave")
+    @MessageMapping("/room/{roomId}/leave")
     @SendTo("/topic/room/{roomId}")
-    public RoomEvent leaveRoom(@DestinationVariable String roomId,
-                               @Payload LeaveRequest request) {
-        
+    public RoomEvent leaveRoom(@DestinationVariable String roomId, @Payload LeaveRequest request) {
+
         RoomState room = rooms.get(roomId);
         if (room != null) {
             room.getVisitors().remove(request.getVisitorId());
@@ -98,13 +90,13 @@ public class DrawingWebSocketController {
                 log.info("Room {} closed (no visitors)", roomId);
             }
         }
-        
+
         log.info("Visitor {} left room {}", request.getVisitorId(), roomId);
-        
-        List<RoomEvent.Visitor> visitors = (room != null) 
-                ? List.copyOf(room.getVisitors().values()) 
+
+        List<RoomEvent.Visitor> visitors = (room != null)
+                ? List.copyOf(room.getVisitors().values())
                 : List.of();
-        
+
         return RoomEvent.builder()
                 .type("visitor_left")
                 .roomId(roomId)
@@ -114,12 +106,13 @@ public class DrawingWebSocketController {
     }
 
     private static class RoomState {
+
         private final ConcurrentHashMap<String, RoomEvent.Visitor> visitors;
-        
+
         public RoomState() {
             this.visitors = new ConcurrentHashMap<>();
         }
-        
+
         public Map<String, RoomEvent.Visitor> getVisitors() {
             return visitors;
         }
