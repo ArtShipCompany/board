@@ -6,6 +6,9 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
   position: relative;
+  width: 100%; 
+  height: 100%; 
+  cursor: none;
 }
 
 .drawing-canvas {
@@ -33,4 +36,12 @@
 
 .drawing-canvas:active {
   cursor: none;
+}
+
+.drawing-board-container.is-panning {
+  cursor: grab;
+}
+
+.drawing-board-container.is-dragging {
+  cursor: grabbing;
 }

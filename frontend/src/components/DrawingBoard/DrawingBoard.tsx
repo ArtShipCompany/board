@@ -83,6 +83,13 @@ const DrawingBoard: React.FC = () => {
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
   const [remoteCursors, setRemoteCursors] = useState<Record<string, RemoteCursor>>({});
 
+  const [scale, setScale] = useState(1);
+
+  const [isSpacePressed, setIsSpacePressed] = useState(false);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const lastMousePosRef = useRef({ x: 0, y: 0 });
+
   const visitorId = useMemo(() => {
     const existing = localStorage.getItem('visitorId');
 
@@ -218,6 +225,36 @@ const DrawingBoard: React.FC = () => {
     };
   }, [dispatch, visitorId, visitorName, visitorColor]);
 
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.code === 'Space') {
+        setIsSpacePressed(true);
+        (document.activeElement as HTMLElement)?.blur();
+      }
+      if (event.key === '+' || event.key === '=') {
+        setScale(prev => Math.min(prev + 0.1, 3));
+      } 
+      else if (event.key === '-') {
+        setScale(prev => Math.max(prev - 0.1, 0.3));
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        setIsSpacePressed(false);
+        setIsDragging(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
   const handleMouseDown = (e: any) => {
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
@@ -226,22 +263,57 @@ const DrawingBoard: React.FC = () => {
       return;
     }
 
-    dispatch(startDrawing(pos));
+    if (isSpacePressed) {
+      setIsDragging(true);
+      lastMousePosRef.current = pos;
+      return;
+    }
+
+    const realPos = {
+      x: (pos.x - panOffset.x) / scale,
+      y: (pos.y - panOffset.y) / scale
+    };
+    dispatch(startDrawing(realPos));
   };
 
   const handleMouseMove = (e: any) => {
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max);
+
 
     if (!pos) {
       return;
     }
 
-    if (e.evt.buttons !== 0) {
-      dispatch(draw(pos));
+    if (isSpacePressed && isDragging) {
+      const dx = pos.x - lastMousePosRef.current.x;
+      const dy = pos.y - lastMousePosRef.current.y;
+      
+      const nextX = panOffset.x + dx;
+      const nextY = panOffset.y + dy;
+
+      setPanOffset({
+        x: clamp(nextX, -dimensions.width * scale, dimensions.width),
+        y: clamp(nextY, -dimensions.height * scale, dimensions.height)
+      });
+      
+      lastMousePosRef.current = pos;
+      return;
     }
 
-    setCursorPos(pos);
+    if (e.evt.buttons !== 0 && !isSpacePressed) {
+      const realPos = {
+        x: (pos.x - panOffset.x) / scale,
+        y: (pos.y - panOffset.y) / scale
+      };
+      dispatch(draw(realPos));
+    }
+
+    setCursorPos({
+        x: pos.x,
+        y: pos.y
+    });
 
     const now = Date.now();
 
@@ -251,14 +323,16 @@ const DrawingBoard: React.FC = () => {
       sendCursor({
         roomId: ROOM_ID,
         visitorId,
-        x: pos.x,
-        y: pos.y,
+        x: (pos.x - panOffset.x) / scale,
+        y: (pos.y - panOffset.y) / scale,
         color: visitorColor,
       });
     }
   };
 
   const handleMouseUp = async () => {
+    setIsDragging(false);
+
     console.log('[DrawingBoard] mouse up:', {
       currentLine,
       sessionId,
@@ -320,10 +394,20 @@ const DrawingBoard: React.FC = () => {
   };
 
   return (
-    <div ref={containerRef} className="drawing-board-container">
+    <div
+      ref={containerRef} 
+      className="drawing-board-container"
+      style={{
+        cursor: isSpacePressed 
+          ? (isDragging ? 'grabbing' : 'grab') 
+          : 'none'
+      }}
+    >
       <Stage
         width={dimensions.width}
         height={dimensions.height}
+        scaleX={scale}
+        scaleY={scale}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -331,8 +415,9 @@ const DrawingBoard: React.FC = () => {
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
+        style={{ backgroundColor: '#f0f2f5' }}
       >
-        <Layer>
+        <Layer x={panOffset.x} y={panOffset.y}>
           {lines.map((line, i) => (
             <KonvaLine
               key={`${i}-${line.points.length}`}
@@ -383,10 +468,10 @@ const DrawingBoard: React.FC = () => {
             </React.Fragment>
           ))}
 
-          {cursorPos && (
+          {cursorPos && !isSpacePressed && (
             <KonvaCircle
-              x={cursorPos.x}
-              y={cursorPos.y}
+              x={(cursorPos.x - panOffset.x) / scale}
+              y={(cursorPos.y - panOffset.y) / scale}
               radius={brushSize / 2}
               fill={tool === 'eraser' ? 'transparent' : color}
               stroke={tool === 'eraser' ? '#000' : color}
