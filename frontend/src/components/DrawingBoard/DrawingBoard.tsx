@@ -4,6 +4,7 @@ import {
   Layer,
   Line as KonvaLine,
   Circle as KonvaCircle,
+  Path,
   Text as KonvaText,
 } from 'react-konva';
 import { useSelector, useDispatch } from 'react-redux';
@@ -131,6 +132,10 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       visitorName,
       color: visitorColor,
       onEvent: (event: DrawingSocketEvent) => {
+
+        // ВРЕМЕННЫЙ ЛОГ ДЛЯ ПРОВЕРКИ:
+        console.log('[WS GET]', event.type, event);
+
         if (event.visitorId === visitorId) return;
 
         if (event.type === 'room_full') {
@@ -156,13 +161,20 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
         }
 
         if (event.type === 'cursor_update') {
-          if (!event.visitorId || typeof event.x !== 'number' || typeof event.y !== 'number') return;
+          const x = Number(event.x);
+          const y = Number(event.y);
+
+          if (!event.visitorId || isNaN(x) || isNaN(y)) {
+            console.warn('Пришел кривой курсор:', event);
+            return;
+          }
+
           setRemoteCursors((prev) => ({
             ...prev,
             [event.visitorId as string]: {
               visitorId: event.visitorId as string,
-              x: event.x as number,
-              y: event.y as number,
+              x: x,
+              y: y,
               color: event.color || '#ff3366',
             },
           }));
@@ -280,7 +292,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
     const isTouch = e.evt.touches && e.evt.touches.length > 0;
     const isClick = e.evt.buttons === 1;
-    
+
     if ((isClick || isTouch) && !isSpacePressed) {
       dispatch(draw(realPos));
     }
@@ -407,24 +419,20 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
           )}
 
           {Object.values(remoteCursors).map((remoteCursor) => (
-            <React.Fragment key={remoteCursor.visitorId}>
-              <KonvaCircle
-                x={remoteCursor.x}
-                y={remoteCursor.y}
-                radius={6}
-                fill={remoteCursor.color}
-                opacity={0.8}
-                listening={false}
-              />
-              <KonvaText
-                x={remoteCursor.x + 10}
-                y={remoteCursor.y + 10}
-                text={remoteCursor.visitorId.slice(0, 4)}
-                fontSize={12}
-                fill={remoteCursor.color}
-                listening={false}
-              />
-            </React.Fragment>
+            <Path
+              key={remoteCursor.visitorId}
+              x={remoteCursor.x}
+              y={remoteCursor.y}
+              // Этот код (data) рисует стандартную стрелочку курсора
+              data="M0 0 L0 17 L5 12 L9 19 L12 17 L8 11 L14 11 Z"
+              fill={remoteCursor.color} // Цвет берется из веб-сокета
+              stroke="white"            // Белая обводка, чтобы выделялся
+              strokeWidth={1}
+              opacity={0.9}
+              listening={false}         // Чтобы чужой курсор не перехватывал ваши клики
+              scaleX={1 / scale}        // Чтобы размер курсора не менялся при зуме доски
+              scaleY={1 / scale}
+            />
           ))}
 
           {cursorPos && !isSpacePressed && (
