@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
-import { Line, Point } from '../types/drawing';
+import { Line, Point, Board } from '../types/drawing';
 import { boardApi } from '../api/boardApi';
 import { sessionApi } from '../api/sessionApi';
 import { strokeApi } from '../api/strokeApi';
@@ -14,6 +14,7 @@ interface DrawingState {
   tool: 'brush' | 'eraser';
   status: 'idle' | 'loading' | 'failed';
   pendingStrokes: { line: Line; tempId: string }[];
+  board: Board | null;
 }
 
 const initialState: DrawingState = {
@@ -26,6 +27,7 @@ const initialState: DrawingState = {
   tool: 'brush',
   status: 'idle',
   pendingStrokes: [],
+  board: null,
 };
 
 function pointsToKonvaPoints(points: any): number[] {
@@ -76,6 +78,7 @@ export const initBoard = createAsyncThunk('drawing/initBoard', async () => {
     lines,
     strokeIds: strokes.map((s) => s.id),
     sessionId: session.id,
+    board,
   };
 });
 
@@ -137,6 +140,7 @@ const drawingSlice = createSlice({
         state.lines = action.payload.lines;
         state.strokeIds = action.payload.strokeIds;
         state.sessionId = action.payload.sessionId;
+        state.board = action.payload.board;
         state.status = 'idle';
       })
       .addCase(initBoard.rejected, (state, action) => {
