@@ -1,7 +1,9 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:8081/ws';
+const HOST = window.location.hostname;
+
+const WS_URL = import.meta.env.VITE_WS_URL || `http://${HOST}:8081/ws`;
 
 export type WsEventType =
     | 'visitor_joined'

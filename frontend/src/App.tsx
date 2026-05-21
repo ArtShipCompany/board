@@ -1,9 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import DrawingBoard from './components/DrawingBoard';
 import Toolbar from './components/Toolbar';
 import NetworkBanner from './components/NetworkBanner/NetworkBanner';
 import { BoardSettingsModal } from './components/BoardSettingsModal/BoardSettingsModal';
+import InfiniteBoardPage from './pages/InfiniteBoardPage';
 import { initBoard, syncPendingStrokes } from './store/drawingSlice';
 import { boardApi } from './api/boardApi';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
@@ -37,7 +39,7 @@ function App() {
     }
   };
 
-  return (
+  const MainAppView = (
     <div className="app">
       <header className="app-header">
         <h1>ARTSHIP</h1>
@@ -68,6 +70,14 @@ function App() {
         <DrawingBoard />
       </main>
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={MainAppView} />
+      
+      <Route path="/infinite-board" element={<InfiniteBoardPage />} />
+    </Routes>
   );
 }
 
