@@ -29,6 +29,7 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import './DrawingBoard.css';
 import { historyApi } from '../../api/historyApi';
 import { loadHistoryFromDB, addHistoryEvent } from '../../store/historySlice';
+import { Minimap } from '../Minimap/Minimap';
 
 type RemoteCursor = {
   visitorId: string;
@@ -353,7 +354,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       if (board?.id) {
         await historyApi.createAction({
           boardId: board.id,
-          userId: 1, 
+          userId: 1,
           actionType: tool === 'eraser' ? 'ERASE' : 'DRAW',
           targetType: 'BOARD',
           targetId: board.id,
@@ -476,6 +477,15 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
           )}
         </Layer>
       </Stage>
+      <Minimap
+        lines={lines}
+        viewportDimensions={dimensions}
+        scale={scale}
+        panOffset={panOffset}
+        setScale={setScale}
+        setPanOffset={setPanOffset}
+        boardBackgroundColor='white'
+      />
     </div>
   );
 };
