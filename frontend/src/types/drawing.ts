@@ -34,3 +34,16 @@ export interface Stroke {
   size: number;
   points: string;
 }
+
+export interface ActionHistoryRecord {
+  id: number;
+  boardId: number;
+  userId: number;
+  actionType: string;
+  targetType: string;
+  targetId: number;
+  previousData: string | null;
+  newData: string | null;
+  timestamp: string;
+  sessionId: number | null;
+}

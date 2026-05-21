@@ -27,7 +27,8 @@ import {
 } from '../../api/drawingSocket';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import './DrawingBoard.css';
-import { logAction } from '../../store/historySlice';
+import { historyApi } from '../../api/historyApi';
+import { loadHistoryFromDB, addHistoryEvent } from '../../store/historySlice';
 
 type RemoteCursor = {
   visitorId: string;
@@ -69,7 +70,7 @@ function makeVisitorColor(visitorId: string) {
 const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const { lines, currentLine, sessionId, brushSize, tool, color } = useSelector(
+  const { lines, currentLine, sessionId, brushSize, tool, color, board } = useSelector(
     (state: RootState) => state.drawing
   );
 
@@ -116,6 +117,12 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
   }, [dispatch]);
 
   useEffect(() => {
+    if (board?.id && visitorId) {
+      dispatch(loadHistoryFromDB({ boardId: board.id, visitorId }));
+    }
+  }, [board?.id, visitorId, dispatch]);
+
+  useEffect(() => {
     const updateDimensions = () => {
       if (!containerRef.current) return;
       const { width, height } = containerRef.current.getBoundingClientRect();
@@ -133,10 +140,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       visitorName,
       color: visitorColor,
       onEvent: (event: DrawingSocketEvent) => {
-
-        // ВРЕМЕННЫЙ ЛОГ ДЛЯ ПРОВЕРКИ:
-        console.log('[WS GET]', event.type, event);
-
         if (event.visitorId === visitorId) return;
 
         if (event.type === 'room_full') {
@@ -333,6 +336,8 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
       if (formattedPoints.length < 2) return;
 
+      console.log('[DrawingBoard] Saving stroke, board:', board);
+
       const saved = await strokeApi.createStroke({
         sessionId,
         layerId: 1,
@@ -344,6 +349,27 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       });
 
       dispatch(addSavedStroke({ line: currentLine, id: saved.id }));
+
+      if (board?.id) {
+        await historyApi.createAction({
+          boardId: board.id,
+          userId: 1, 
+          actionType: tool === 'eraser' ? 'ERASE' : 'DRAW',
+          targetType: 'BOARD',
+          targetId: board.id,
+          details: `Stroke ID: ${saved.id}|VISITOR:${visitorId}`,
+          previousData: null,
+          sessionId: null,
+        });
+      } else {
+        console.warn('[DrawingBoard] No board.id, skipping history save');
+      }
+
+      dispatch(addHistoryEvent({
+        id: saved.id.toString(),
+        actionText: tool === 'eraser' ? 'Стер элемент' : 'Нарисовал штрих',
+        time: new Date().toLocaleTimeString(),
+      }));
 
       sendStroke({
         roomId: ROOM_ID,
@@ -364,9 +390,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
     } finally {
       dispatch(stopDrawing());
     }
-
-    const actionText = tool === 'eraser' ? 'Использовал ластик' : 'Нарисовал линию';
-    dispatch(logAction(actionText));
   };
 
   return (
@@ -427,14 +450,13 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
               key={remoteCursor.visitorId}
               x={remoteCursor.x}
               y={remoteCursor.y}
-              // Этот код (data) рисует стандартную стрелочку курсора
               data="M0 0 L0 17 L5 12 L9 19 L12 17 L8 11 L14 11 Z"
-              fill={remoteCursor.color} // Цвет берется из веб-сокета
-              stroke="white"            // Белая обводка, чтобы выделялся
+              fill={remoteCursor.color}
+              stroke="white"
               strokeWidth={1}
               opacity={0.9}
-              listening={false}         // Чтобы чужой курсор не перехватывал ваши клики
-              scaleX={1 / scale}        // Чтобы размер курсора не менялся при зуме доски
+              listening={false}
+              scaleX={1 / scale}
               scaleY={1 / scale}
             />
           ))}

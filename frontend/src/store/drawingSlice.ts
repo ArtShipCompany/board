@@ -146,7 +146,7 @@ const drawingSlice = createSlice({
       .addCase(initBoard.rejected, (state, action) => {
         state.status = 'failed';
         console.error('[drawingSlice] initBoard failed:', action.error);
-      });
+      })
   }
 });
 

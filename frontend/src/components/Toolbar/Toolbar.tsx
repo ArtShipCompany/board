@@ -3,12 +3,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { setTool, setColor, setBrushSize, undo, clear } from '../../store/drawingSlice';
 import { logAction } from '../../store/historySlice';
+import { historyApi } from '../../api/historyApi';
 import './Toolbar.css';
 
 const Toolbar: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   
-  const { tool, color, brushSize, lines, currentLine } = useSelector((state: RootState) => state.drawing);
+  const { tool, color, brushSize, lines, currentLine, board } = useSelector((state: RootState) => state.drawing);
   
   const [showColorPicker, setShowColorPicker] = useState<boolean>(false);
   const colorPickerRef = useRef<HTMLDivElement | null>(null);
@@ -23,10 +24,17 @@ const Toolbar: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleColorChange = (newColor: string) => {
+  const handleColorChange = async (newColor: string) => {
     dispatch(setColor(newColor));
     if (tool === 'eraser') {
       dispatch(setTool('brush'));
+    }
+    if (board?.id) {
+      await historyApi.createAction({
+        boardId: board.id,
+        actionType: 'COLOR_CHANGE',
+        details: `Цвет: ${newColor}`,
+      });
     }
     dispatch(logAction(`Выбрал цвет: ${newColor.toUpperCase()}`));
   };
@@ -35,25 +43,53 @@ const Toolbar: React.FC = () => {
     dispatch(setBrushSize(size));
   };
 
-  const handleBrushSizeLog = () => {
+  const handleBrushSizeLog = async () => {
+    if (board?.id) {
+      await historyApi.createAction({
+        boardId: board.id,
+        actionType: 'TOOL_CHANGE',
+        details: `Размер кисти: ${brushSize}`,
+      });
+    }
     dispatch(logAction(`Изменил размер кисти на ${brushSize}`));
   };
 
-  const handleToolChange = (newTool: 'brush' | 'eraser') => {
+  const handleToolChange = async (newTool: 'brush' | 'eraser') => {
     dispatch(setTool(newTool));
     const toolName = newTool === 'brush' ? 'кисть' : 'ластик';
+    if (board?.id) {
+      await historyApi.createAction({
+        boardId: board.id,
+        actionType: 'TOOL_CHANGE',
+        details: `Инструмент: ${toolName}`,
+      });
+    }
     dispatch(logAction(`Взял ${toolName}`));
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (window.confirm('Вы уверены, что хотите очистить слой?')) {
       dispatch(clear());
+      if (board?.id) {
+        await historyApi.createAction({
+          boardId: board.id,
+          actionType: 'CLEAR',
+          details: 'Холст очищен',
+        });
+      }
       dispatch(logAction('Очистил холст'));
     }
   };
 
-  const handleUndo = () => {
+  const handleUndo = async () => {
     dispatch(undo());
+    if (board?.id) {
+      await historyApi.createAction({
+        boardId: board.id,
+        actionType: 'TOOL_CHANGE',
+        details: 'Отмена действия',
+      });
+    }
     dispatch(logAction('Отменил действие (Назад)'));
   };
 
