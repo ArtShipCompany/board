@@ -20,7 +20,6 @@ const initialState: HistoryState = {
 export const loadHistoryFromDB = createAsyncThunk(
     'history/loadFromDB',
     async ({ boardId }: { boardId: number }) => {
-        console.log('[historySlice] Loading history for board:', boardId);
         const records = await historyApi.getBoardHistory(boardId);
 
         const sortedRecords = [...records].sort((a, b) => {
@@ -28,7 +27,6 @@ export const loadHistoryFromDB = createAsyncThunk(
         });
 
         const last20 = sortedRecords.slice(0, 20);
-        console.log('[historySlice] Showing last', last20.length, 'records');
 
         return last20.map((record) => {
             let dateStr = record.timestamp as string;
@@ -69,7 +67,6 @@ const historySlice = createSlice({
     extraReducers: (builder) => {
         builder.addCase(loadHistoryFromDB.fulfilled, (state, action) => {
             state.events = action.payload;
-            console.log('[historySlice] Loaded events:', action.payload.length);
         });
     }
 });

@@ -7,7 +7,6 @@ import './ActionHistoryWidget.css';
 export const ActionHistoryWidget: React.FC = () => {
   const dispatch = useDispatch();
   const { events, isOpen } = useSelector((state: RootState) => state.history);
-  console.log('[Widget] isOpen:', isOpen, 'events:', events.length);
 
   return (
     <div className="history-widget-container">
@@ -24,7 +23,6 @@ export const ActionHistoryWidget: React.FC = () => {
             ) : (
               <ul className="history-list">
                 {events.map((evt) => {
-                  console.log('[Widget] Rendering event:', evt);
                   return (
                     <li key={evt.id} className="history-list-item">
                       <span>{evt.actionText}</span>

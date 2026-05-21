@@ -95,14 +95,20 @@ export function sendJoinRoom(payload: {
     visitorName: string;
     color: string;
 }) {
-    publish(`/app/room/${payload.roomId}/join`, payload);
+    publish(`/app/room/${payload.roomId}/join`, {
+        type: 'visitor_joined',
+        ...payload
+    });
 }
 
 export function sendLeaveRoom(payload: {
     roomId: string;
     visitorId: string;
 }) {
-    publish(`/app/room/${payload.roomId}/leave`, payload);
+    publish(`/app/room/${payload.roomId}/leave`, {
+        type: 'visitor_left',
+        ...payload
+    });
 }
 
 export function sendStroke(payload: {

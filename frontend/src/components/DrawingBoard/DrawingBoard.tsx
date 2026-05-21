@@ -119,7 +119,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
   useEffect(() => {
     if (board?.id) {
-      console.log('[DrawingBoard] Triggering history load for board:', board.id);
       dispatch(loadHistoryFromDB({ boardId: board.id }));
     }
   }, [board?.id, dispatch]);
@@ -142,7 +141,12 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       visitorName,
       color: visitorColor,
       onEvent: (event: DrawingSocketEvent) => {
-        if (event.visitorId === visitorId) return;
+        if (event.visitorId === visitorId) {
+          if (event.type !== 'stroke_draw') {
+             return; 
+          }
+        }
+
 
         if (event.type === 'room_full') {
           alert('Комната заполнена. Максимум 10 участников.');
@@ -338,8 +342,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
       if (formattedPoints.length < 2) return;
 
-      console.log('[DrawingBoard] Saving stroke, board:', board);
-
       const saved = await strokeApi.createStroke({
         sessionId,
         layerId: 1,
@@ -353,9 +355,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       dispatch(addSavedStroke({ line: currentLine, id: saved.id }));
 
       if (board?.id) {
-        const details = `Stroke ID: ${saved.id}|VISITOR:${visitorId}`;
-        console.log('[DrawingBoard] Saving action with details:', details);
-
         await historyApi.createAction({
           boardId: board.id,
           userId: 1,
@@ -366,8 +365,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
           previousData: null,
           sessionId: null,
         });
-
-        console.log('[DrawingBoard] History save request sent');
       }
 
       dispatch(addHistoryEvent({
