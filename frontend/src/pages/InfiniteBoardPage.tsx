@@ -2,6 +2,7 @@ import React from 'react';
 import Toolbar from '../components/Toolbar';
 import DrawingBoard from '../components/DrawingBoard';
 import './InfiniteBoardPage.css';
+import { ActionHistoryWidget } from '../components/ActionHistory/ActionHistoryWidget';
 
 const InfiniteBoardPage: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ const InfiniteBoardPage: React.FC = () => {
       </div>
       
       <DrawingBoard isInfinite={true} /> 
+      <ActionHistoryWidget />
     </div>
   );
 };

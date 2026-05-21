@@ -27,6 +27,7 @@ import {
 } from '../../api/drawingSocket';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import './DrawingBoard.css';
+import { logAction } from '../../store/historySlice';
 
 type RemoteCursor = {
   visitorId: string;
@@ -363,6 +364,9 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
     } finally {
       dispatch(stopDrawing());
     }
+
+    const actionText = tool === 'eraser' ? 'Использовал ластик' : 'Нарисовал линию';
+    dispatch(logAction(actionText));
   };
 
   return (
