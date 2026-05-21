@@ -1,0 +1,15 @@
+.minimap-container {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  border: 1px solid #555;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.fixed-minimap {
+  position: fixed !important;
+  top: 20px !important;
+  right: 20px !important;
+}

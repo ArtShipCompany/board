@@ -8,6 +8,7 @@ import org.springframework.messaging.handler.annotation.DestinationVariable;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.handler.annotation.SendTo;
+import org.springframework.messaging.simp.SimpMessageHeaderAccessor;
 import org.springframework.stereotype.Controller;
 
 import com.example.artship.board.model.ws.ActionData;
@@ -16,19 +17,29 @@ import com.example.artship.board.model.ws.JoinRequest;
 import com.example.artship.board.model.ws.LeaveRequest;
 import com.example.artship.board.model.ws.RoomEvent;
 import com.example.artship.board.model.ws.StrokeData;
+import com.example.artship.board.websocket.ActiveRoomManager;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Controller
 @Slf4j
+@RequiredArgsConstructor
 public class DrawingWebSocketController {
 
     private final ConcurrentHashMap<String, RoomState> rooms = new ConcurrentHashMap<>();
     private static final int MAX_VISITORS = 10;
+    
+    private final ActiveRoomManager activeRoomManager; 
 
     @MessageMapping("/room/{roomId}/join")
     @SendTo("/topic/room/{roomId}")
-    public RoomEvent joinRoom(@DestinationVariable String roomId, @Payload JoinRequest request) {
+    public RoomEvent joinRoom(
+            @DestinationVariable String roomId, 
+            @Payload JoinRequest request,
+            SimpMessageHeaderAccessor headerAccessor) {
+
+        String sessionId = headerAccessor.getSessionId();
 
         RoomState room = rooms.computeIfAbsent(roomId, k -> new RoomState());
 
@@ -47,8 +58,10 @@ public class DrawingWebSocketController {
 
         room.getVisitors().put(request.getVisitorId(), visitor);
 
-        log.info("Visitor {} ({}) joined room {}",
-                request.getVisitorName(), request.getVisitorId(), roomId);
+        activeRoomManager.addUserToRoom(sessionId, roomId, request.getVisitorId(), request.getVisitorName());
+        
+        log.info("Visitor {} ({}) joined room {} with session {}",
+                request.getVisitorName(), request.getVisitorId(), roomId, sessionId);
 
         return RoomEvent.builder()
                 .type("visitor_joined")
@@ -91,6 +104,8 @@ public class DrawingWebSocketController {
             }
         }
 
+        activeRoomManager.removeUserFromRoom(roomId, request.getVisitorId());
+
         log.info("Visitor {} left room {}", request.getVisitorId(), roomId);
 
         List<RoomEvent.Visitor> visitors = (room != null)
@@ -106,13 +121,10 @@ public class DrawingWebSocketController {
     }
 
     private static class RoomState {
-
         private final ConcurrentHashMap<String, RoomEvent.Visitor> visitors;
-
         public RoomState() {
             this.visitors = new ConcurrentHashMap<>();
         }
-
         public Map<String, RoomEvent.Visitor> getVisitors() {
             return visitors;
         }

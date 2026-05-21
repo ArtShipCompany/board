@@ -1,7 +1,7 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { RootState } from '../../store'; 
-import { toggleHistoryWindow } from '../../store/historySlice'; 
+import { RootState } from '../../store';
+import { toggleHistoryWindow } from '../../store/historySlice';
 import './ActionHistoryWidget.css';
 
 export const ActionHistoryWidget: React.FC = () => {
@@ -10,31 +10,33 @@ export const ActionHistoryWidget: React.FC = () => {
 
   return (
     <div className="history-widget-container">
-      
+
       {isOpen && (
         <div className="history-window">
           <div className="history-header">
             История действий
           </div>
-          
+
           <div className="history-content">
             {events.length === 0 ? (
               <p className="history-empty">История пока пуста</p>
             ) : (
               <ul className="history-list">
-                {events.map((evt) => (
-                  <li key={evt.id} className="history-list-item">
-                    <span>{evt.actionText}</span>
-                    <span className="history-time">{evt.time}</span>
-                  </li>
-                ))}
+                {events.map((evt) => {
+                  return (
+                    <li key={evt.id} className="history-list-item">
+                      <span>{evt.actionText}</span>
+                      <span className="history-time">{evt.time}</span>
+                    </li>
+                  );
+                })}
               </ul>
             )}
           </div>
         </div>
       )}
 
-      <button 
+      <button
         onClick={() => dispatch(toggleHistoryWindow())}
         className={`history-toggle-btn ${isOpen ? 'open' : ''}`}
       >

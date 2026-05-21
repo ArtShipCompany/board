@@ -29,6 +29,7 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import './DrawingBoard.css';
 import { historyApi } from '../../api/historyApi';
 import { loadHistoryFromDB, addHistoryEvent } from '../../store/historySlice';
+import { Minimap } from '../Minimap/Minimap';
 
 type RemoteCursor = {
   visitorId: string;
@@ -140,7 +141,12 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       visitorName,
       color: visitorColor,
       onEvent: (event: DrawingSocketEvent) => {
-        if (event.visitorId === visitorId) return;
+        if (event.visitorId === visitorId) {
+          if (event.type !== 'stroke_draw') {
+            return;
+          }
+        }
+
 
         if (event.type === 'room_full') {
           alert('Комната заполнена. Максимум 10 участников.');
@@ -336,8 +342,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
       if (formattedPoints.length < 2) return;
 
-      console.log('[DrawingBoard] Saving stroke, board:', board);
-
       const saved = await strokeApi.createStroke({
         sessionId,
         layerId: 1,
@@ -353,7 +357,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       if (board?.id) {
         await historyApi.createAction({
           boardId: board.id,
-          userId: 1, 
+          userId: 1,
           actionType: tool === 'eraser' ? 'ERASE' : 'DRAW',
           targetType: 'BOARD',
           targetId: board.id,
@@ -361,8 +365,6 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
           previousData: null,
           sessionId: null,
         });
-      } else {
-        console.warn('[DrawingBoard] No board.id, skipping history save');
       }
 
       dispatch(addHistoryEvent({
@@ -476,6 +478,15 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
           )}
         </Layer>
       </Stage>
+      <Minimap
+        lines={lines}
+        viewportDimensions={dimensions}
+        scale={scale}
+        panOffset={panOffset}
+        setScale={setScale}
+        setPanOffset={setPanOffset}
+        boardBackgroundColor='white'
+      />
     </div>
   );
 };
