@@ -27,14 +27,8 @@ export const BoardSettingsModal: React.FC<Props> = ({ isOpen, onClose, board, on
     setFormData(prev => ({ ...prev, width: prev.height, height: prev.width }));
   };
 
-  // Функция для тестирования бесконечной доски
   const handleTestInfiniteBoard = () => {
-    // Открываем новую вкладку. 
-    // Замените '/infinite-board' на реальный маршрут (URL) вашей страницы тестирования
     window.open('/infinite-board', '_blank');
-    
-    // Если нужно закрыть модалку после клика, раскомментируйте строку ниже:
-    // onClose();
   };
 
   return (
@@ -89,14 +83,12 @@ export const BoardSettingsModal: React.FC<Props> = ({ isOpen, onClose, board, on
           />
         </div>
         
-        {/* Блок с кнопками */}
         <div className="modal-actions">
-          {/* Новая кнопка для теста */}
           <button 
             type="button" 
             className="test-btn" 
             onClick={handleTestInfiniteBoard}
-            style={{ marginRight: 'auto', backgroundColor: '#4CAF50', color: 'white' }} // Базовые стили для выделения (лучше перенести в .css)
+            style={{ marginRight: 'auto', backgroundColor: '#4CAF50', color: 'white' }}
           >
             Тест бесконечной доски
           </button>

@@ -1,6 +1,7 @@
 import { DrawingSession } from '../types/drawing';
 
-const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8081/api').replace(/\/$/, '');
+const HOST = window.location.hostname;
+const API_BASE_URL = `http://${HOST}:8081/api`;
 
 export type CreateSessionInput = Pick<DrawingSession, 'boardId' | 'userId' | 'layerId'> & {
   brushPresetId?: number;
