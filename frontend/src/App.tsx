@@ -10,6 +10,7 @@ import { initBoard, syncPendingStrokes } from './store/drawingSlice';
 import { boardApi } from './api/boardApi';
 import { useNetworkStatus } from './hooks/useNetworkStatus';
 import { AppDispatch, RootState } from './store';
+import { ActionHistoryWidget } from './components/ActionHistory/ActionHistoryWidget';
 import './styles/App.css';
 
 function App() {
@@ -68,6 +69,8 @@ function App() {
         <NetworkBanner />
         <Toolbar />
         <DrawingBoard />
+        
+        <ActionHistoryWidget />
       </main>
     </div>
   );
@@ -75,7 +78,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={MainAppView} />
-      
       <Route path="/infinite-board" element={<InfiniteBoardPage />} />
     </Routes>
   );

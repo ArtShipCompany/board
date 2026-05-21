@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
 import { setTool, setColor, setBrushSize, undo, clear } from '../../store/drawingSlice';
+import { logAction } from '../../store/historySlice';
 import './Toolbar.css';
 
 const Toolbar: React.FC = () => {
@@ -27,20 +28,33 @@ const Toolbar: React.FC = () => {
     if (tool === 'eraser') {
       dispatch(setTool('brush'));
     }
+    dispatch(logAction(`Выбрал цвет: ${newColor.toUpperCase()}`));
   };
 
   const handleBrushSizeChange = (size: number) => {
     dispatch(setBrushSize(size));
   };
 
+  const handleBrushSizeLog = () => {
+    dispatch(logAction(`Изменил размер кисти на ${brushSize}`));
+  };
+
   const handleToolChange = (newTool: 'brush' | 'eraser') => {
     dispatch(setTool(newTool));
+    const toolName = newTool === 'brush' ? 'кисть' : 'ластик';
+    dispatch(logAction(`Взял ${toolName}`));
   };
 
   const handleClear = () => {
     if (window.confirm('Вы уверены, что хотите очистить слой?')) {
       dispatch(clear());
+      dispatch(logAction('Очистил холст'));
     }
+  };
+
+  const handleUndo = () => {
+    dispatch(undo());
+    dispatch(logAction('Отменил действие (Назад)'));
   };
 
   const toggleColorPicker = (e: React.MouseEvent) => {
@@ -116,6 +130,8 @@ const Toolbar: React.FC = () => {
             min="1" max="50"
             value={brushSize}
             onChange={(e) => handleBrushSizeChange(parseInt(e.target.value))}
+            onMouseUp={handleBrushSizeLog}
+            onTouchEnd={handleBrushSizeLog}
             className="brush-size-slider"
           />
           <div className="brush-size-preview">
@@ -137,7 +153,7 @@ const Toolbar: React.FC = () => {
         <div className="action-buttons">
           <button 
             className="action-button undo" 
-            onClick={() => dispatch(undo())} 
+            onClick={handleUndo}
             disabled={lines.length === 0}
           >
             Назад
