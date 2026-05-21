@@ -118,10 +118,11 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (board?.id && visitorId) {
-      dispatch(loadHistoryFromDB({ boardId: board.id, visitorId }));
+    if (board?.id) {
+      console.log('[DrawingBoard] Triggering history load for board:', board.id);
+      dispatch(loadHistoryFromDB({ boardId: board.id }));
     }
-  }, [board?.id, visitorId, dispatch]);
+  }, [board?.id, dispatch]);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -352,6 +353,9 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       dispatch(addSavedStroke({ line: currentLine, id: saved.id }));
 
       if (board?.id) {
+        const details = `Stroke ID: ${saved.id}|VISITOR:${visitorId}`;
+        console.log('[DrawingBoard] Saving action with details:', details);
+
         await historyApi.createAction({
           boardId: board.id,
           userId: 1,
@@ -362,8 +366,8 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
           previousData: null,
           sessionId: null,
         });
-      } else {
-        console.warn('[DrawingBoard] No board.id, skipping history save');
+
+        console.log('[DrawingBoard] History save request sent');
       }
 
       dispatch(addHistoryEvent({

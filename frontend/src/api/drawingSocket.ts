@@ -48,16 +48,12 @@ export function connectDrawingSocket(params: {
     client = new Client({
         webSocketFactory: () => new SockJS(WS_URL),
         reconnectDelay: 3000,
-        debug: (msg) => {
-            console.log('[WS]', msg);
-        },
         onConnect: () => {
             console.log('[WS] connected');
 
             client?.subscribe(`/topic/room/${roomId}`, (message: IMessage) => {
                 try {
                     const event = JSON.parse(message.body);
-                    console.log('[WS] received:', event);
                     onEvent(event);
                 } catch (error) {
                     console.error('[WS] failed to parse message:', message.body, error);
@@ -74,7 +70,6 @@ export function connectDrawingSocket(params: {
             onConnected?.();
         },
         onDisconnect: () => {
-            console.log('[WS] disconnected');
             onDisconnected?.();
         },
         onStompError: (frame) => {
