@@ -19,14 +19,18 @@ const initialState: HistoryState = {
 
 export const loadHistoryFromDB = createAsyncThunk(
     'history/loadFromDB',
-    async ({ boardId }: { boardId: number }) => {
+    async ({ boardId, visitorId }: { boardId: number; visitorId: string }) => {
         const records = await historyApi.getBoardHistory(boardId);
 
         const sortedRecords = [...records].sort((a, b) => {
             return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
         });
 
-        const last20 = sortedRecords.slice(0, 20);
+        const myRecords = sortedRecords.filter(record => 
+            record.newData?.includes(`VISITOR:${visitorId}`)
+        );
+
+        const last20 = myRecords.slice(0, 20);
 
         return last20.map((record) => {
             let dateStr = record.timestamp as string;

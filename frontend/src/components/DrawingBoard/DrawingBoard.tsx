@@ -118,10 +118,10 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    if (board?.id) {
-      dispatch(loadHistoryFromDB({ boardId: board.id }));
+    if (board?.id && visitorId) {
+      dispatch(loadHistoryFromDB({ boardId: board.id, visitorId }));
     }
-  }, [board?.id, dispatch]);
+  }, [board?.id, visitorId, dispatch]);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -143,7 +143,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       onEvent: (event: DrawingSocketEvent) => {
         if (event.visitorId === visitorId) {
           if (event.type !== 'stroke_draw') {
-             return; 
+            return;
           }
         }
 
