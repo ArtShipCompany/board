@@ -52,8 +52,12 @@ function pointsToKonvaPoints(points: any): number[] {
   return [];
 }
 
-export const initBoard = createAsyncThunk('drawing/initBoard', async () => {
-  const board = await boardApi.getMyBoard();
+export const initBoard = createAsyncThunk('drawing/initBoard', async (boardId: number) => {
+  const board = await boardApi.getBoardById(boardId);
+
+  if (!board) {
+    throw new Error('Доска не найдена');
+  }
 
   let session = await sessionApi.getActiveSessionByBoard(board.id);
 
@@ -86,6 +90,14 @@ const drawingSlice = createSlice({
   name: 'drawing',
   initialState,
   reducers: {
+    resetDrawing: (state) => {
+      state.lines = [];
+      state.strokeIds = [];
+      state.currentLine = null;
+      state.sessionId = null;
+      state.board = null;
+      state.pendingStrokes = [];
+    },
     setTool: (state, action: PayloadAction<'brush' | 'eraser'>) => {
       state.tool = action.payload;
     },
@@ -183,5 +195,5 @@ export const syncPendingStrokes = createAsyncThunk(
   }
 );
 
-export const { setTool, setColor, setBrushSize, startDrawing, draw, stopDrawing, addSavedStroke, undo, clear, queueStroke, removeFromQueue } = drawingSlice.actions;
+export const { setTool, setColor, setBrushSize, startDrawing, draw, stopDrawing, addSavedStroke, undo, clear, queueStroke, removeFromQueue, resetDrawing } = drawingSlice.actions;
 export default drawingSlice.reducer;

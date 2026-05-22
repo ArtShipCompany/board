@@ -17,6 +17,7 @@ import {
   initBoard,
   queueStroke,
   syncPendingStrokes,
+  resetDrawing,
 } from '../../store/drawingSlice';
 import { strokeApi } from '../../api/strokeApi';
 import {
@@ -39,10 +40,9 @@ type RemoteCursor = {
 };
 
 interface DrawingBoardProps {
+  boardId: number;
   isInfinite?: boolean;
 }
-
-const ROOM_ID = '1';
 
 function createClientId() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -68,7 +68,7 @@ function makeVisitorColor(visitorId: string) {
   return colors[sum % colors.length];
 }
 
-const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
+export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite }) => {
   const dispatch = useDispatch<AppDispatch>();
 
   const { lines, currentLine, sessionId, brushSize, tool, color, board } = useSelector(
@@ -114,8 +114,13 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
   }, [visitorId]);
 
   useEffect(() => {
-    dispatch(initBoard());
-  }, [dispatch]);
+    dispatch(initBoard(boardId));
+  }, [boardId, dispatch]);
+
+  useEffect(() => {
+    dispatch(resetDrawing());
+    dispatch(initBoard(boardId));
+  }, [boardId, dispatch]);
 
   useEffect(() => {
     if (board?.id && visitorId) {
@@ -136,7 +141,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
   useEffect(() => {
     const disconnect = connectDrawingSocket({
-      roomId: ROOM_ID,
+      roomId: boardId,
       visitorId,
       visitorName,
       color: visitorColor,
@@ -311,7 +316,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
     if (now - lastCursorSentAtRef.current > 75) {
       lastCursorSentAtRef.current = now;
       sendCursor({
-        roomId: ROOM_ID,
+        roomId: boardId,
         visitorId,
         x: realPos.x,
         y: realPos.y,
@@ -356,7 +361,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
 
       if (board?.id) {
         await historyApi.createAction({
-          boardId: board.id,
+          boardId: boardId,
           userId: 1,
           actionType: tool === 'eraser' ? 'ERASE' : 'DRAW',
           targetType: 'BOARD',
@@ -374,7 +379,7 @@ const DrawingBoard: React.FC<DrawingBoardProps> = ({ isInfinite = false }) => {
       }));
 
       sendStroke({
-        roomId: ROOM_ID,
+        roomId: boardId,
         visitorId,
         strokeId: saved.id,
         layerId: 1,
