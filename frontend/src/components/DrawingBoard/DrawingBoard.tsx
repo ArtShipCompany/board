@@ -16,6 +16,7 @@ import {
   addSavedStroke,
   queueStroke,
   syncPendingStrokes,
+  clearCanvas,
 } from '../../store/drawingSlice';
 import { strokeApi } from '../../api/strokeApi';
 import {
@@ -125,6 +126,7 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
   const isInfinite = mode === 'infinite';
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const linesRef = useRef(lines);
   const lastCursorSentAtRef = useRef<number>(0);
   const lastPanPointRef = useRef<{ x: number; y: number } | null>(null);
   const loadedSessionRef = useRef<number | null>(null);
@@ -137,6 +139,10 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
   const [scale, setScale] = useState(1);
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
+
+  useEffect(() => {
+    linesRef.current = lines;
+  }, [lines]);
 
   const visitorId = useMemo(() => {
     const existing = localStorage.getItem('visitorId');
@@ -168,11 +174,27 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
   const boardWidth = Number(board?.width) || 800;
   const boardHeight = Number(board?.height) || 600;
 
+  const rebuildLines = (nextLines: typeof lines) => {
+    const baseId = Date.now();
+
+    dispatch(clearCanvas());
+
+    nextLines.forEach((line, index) => {
+      dispatch(
+        addSavedStroke({
+          id: baseId + index,
+          line,
+        })
+      );
+    });
+  };
+
   useEffect(() => {
     loadedSessionRef.current = null;
     warnedAboutMissingSessionRef.current = false;
     localStrokeIdsRef.current.clear();
     setRemoteCursors({});
+    setCursorPos(null);
   }, [boardId]);
 
   useEffect(() => {
@@ -262,14 +284,58 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
       color: visitorColor,
       onEvent: (event: DrawingSocketEvent) => {
         if (event.type === 'stroke_draw') {
-          const incomingStrokeId = Number(event.strokeId);
+          const rawStrokeType =
+            (event as any).strokeType ??
+            (event as any).lineType ??
+            (event as any).toolType ??
+            (event as any).controlType;
+
+          if (rawStrokeType === 'clear') {
+            if (event.visitorId === visitorId) return;
+
+            dispatch(stopDrawing());
+            dispatch(clearCanvas());
+            localStrokeIdsRef.current.clear();
+            setCursorPos(null);
+
+            dispatch(
+              addHistoryEvent({
+                id: `socket-clear-${Date.now()}-${Math.random()}`,
+                actionText: 'Другой пользователь очистил холст',
+                time: new Date().toLocaleTimeString(),
+              })
+            );
+
+            return;
+          }
+
+          if (rawStrokeType === 'undo') {
+            if (event.visitorId === visitorId) return;
+
+            dispatch(stopDrawing());
+
+            const nextLines = linesRef.current.slice(0, -1);
+            rebuildLines(nextLines);
+
+            dispatch(
+              addHistoryEvent({
+                id: `socket-undo-${Date.now()}-${Math.random()}`,
+                actionText: 'Другой пользователь отменил последнее действие',
+                time: new Date().toLocaleTimeString(),
+              })
+            );
+
+            return;
+          }
+
+          const incomingStrokeId = Number((event as any).strokeId);
 
           if (incomingStrokeId && localStrokeIdsRef.current.has(incomingStrokeId)) {
             return;
           }
 
-          const points = Array.isArray(event.points) ? event.points : [];
-          const konvaPoints = points.flatMap((p) => [Number(p.x), Number(p.y)]);
+          const points = Array.isArray((event as any).points) ? (event as any).points : [];
+          const konvaPoints = points.flatMap((p: any) => [Number(p.x), Number(p.y)]);
 
           if (konvaPoints.length < 2) return;
 
@@ -277,14 +343,18 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
             localStrokeIdsRef.current.add(incomingStrokeId);
           }
 
+          const normalizedStrokeType = rawStrokeType === 'eraser' ? 'eraser' : 'brush';
+          const strokeColor =
+            typeof (event as any).color === 'string' ? (event as any).color : '#000000';
+
           dispatch(
             addSavedStroke({
               id: incomingStrokeId || Date.now(),
               line: {
                 points: konvaPoints,
-                color: event.color || '#000000',
-                width: Number(event.size || 5),
-                type: 'brush',
+                color: strokeColor,
+                width: Number((event as any).size || 5),
+                type: normalizedStrokeType,
               },
             })
           );
@@ -293,9 +363,9 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
             addHistoryEvent({
               id: `socket-${incomingStrokeId || Date.now()}-${Math.random()}`,
               actionText:
-                event.visitorId && event.visitorId !== visitorId
-                  ? 'Другой пользователь нарисовал штрих'
-                  : 'Нарисовал штрих',
+                rawStrokeType === 'eraser'
+                  ? 'Другой пользователь стер часть рисунка'
+                  : 'Другой пользователь нарисовал штрих',
               time: new Date().toLocaleTimeString(),
             })
           );
@@ -308,8 +378,8 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
         if (event.visitorId === visitorId) return;
 
         if (event.type === 'cursor_update') {
-          const x = Number(event.x);
-          const y = Number(event.y);
+          const x = Number((event as any).x);
+          const y = Number((event as any).y);
 
           if (!event.visitorId || Number.isNaN(x) || Number.isNaN(y)) return;
 
@@ -319,7 +389,7 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
               visitorId: event.visitorId as string,
               x,
               y,
-              color: event.color || '#ff3366',
+              color: (event as any).color || '#ff3366',
             },
           }));
           return;
@@ -469,6 +539,11 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
       return;
     }
 
+    const persistedStrokeColor =
+      currentLine.type === 'eraser'
+        ? board?.backgroundColor || '#ffffff'
+        : currentLine.color;
+
     try {
       if (!isOnline) {
         dispatch(queueStroke(strokePayload));
@@ -481,11 +556,12 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
         sessionId,
         layerId: 1,
         brushPresetId: 1,
-        color: currentLine.color,
+        color: persistedStrokeColor,
         size: currentLine.width,
         opacity: 1,
         points: formattedPoints,
-      });
+        type: currentLine.type,
+      } as any);
 
       if (saved.id) {
         localStrokeIdsRef.current.add(saved.id);
@@ -524,11 +600,14 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
         strokeId: saved.id,
         layerId: 1,
         brushPresetId: 1,
-        color: currentLine.color,
+        color: persistedStrokeColor,
         size: currentLine.width,
         opacity: 1,
         points: formattedPoints,
-      });
+        strokeType: currentLine.type,
+        lineType: currentLine.type,
+        toolType: currentLine.type,
+      } as any);
 
       dispatch(syncPendingStrokes());
     } catch (error) {
