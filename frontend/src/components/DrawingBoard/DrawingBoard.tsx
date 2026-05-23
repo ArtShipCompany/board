@@ -129,6 +129,7 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
   const lastPanPointRef = useRef<{ x: number; y: number } | null>(null);
   const loadedSessionRef = useRef<number | null>(null);
   const warnedAboutMissingSessionRef = useRef(false);
+  const localStrokeIdsRef = useRef<Set<number>>(new Set());
 
   const [viewportSize, setViewportSize] = useState({ width: 1200, height: 800 });
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
@@ -168,10 +169,17 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
   const boardHeight = Number(board?.height) || 600;
 
   useEffect(() => {
-    if (!isInfinite && board?.id && visitorId) {
+    loadedSessionRef.current = null;
+    warnedAboutMissingSessionRef.current = false;
+    localStrokeIdsRef.current.clear();
+    setRemoteCursors({});
+  }, [boardId]);
+
+  useEffect(() => {
+    if (board?.id && visitorId) {
       dispatch(loadHistoryFromDB({ boardId: board.id, visitorId }));
     }
-  }, [board?.id, visitorId, dispatch, isInfinite]);
+  }, [board?.id, visitorId, dispatch]);
 
   useEffect(() => {
     if (!isInfinite) return;
@@ -199,7 +207,6 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
     };
   }, [isInfinite]);
 
-  // Загружаем сохранённые штрихи после перезагрузки страницы
   useEffect(() => {
     if (!sessionId) return;
     if (loadedSessionRef.current === sessionId) return;
@@ -218,6 +225,10 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
           const konvaPoints = normalizeKonvaPoints(savedStroke.points);
 
           if (konvaPoints.length < 2) continue;
+
+          if (savedStroke.id) {
+            localStrokeIdsRef.current.add(savedStroke.id);
+          }
 
           dispatch(
             addSavedStroke({
@@ -244,33 +255,57 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
   }, [sessionId, dispatch]);
 
   useEffect(() => {
-    if (!isInfinite) return () => { };
-
     const disconnect = connectDrawingSocket({
       roomId: boardId,
       visitorId,
       visitorName,
       color: visitorColor,
       onEvent: (event: DrawingSocketEvent) => {
-        if (event.visitorId === visitorId) return;
-
         if (event.type === 'stroke_draw') {
-          const points = event.points || [];
-          const konvaPoints = points.flatMap((p) => [p.x, p.y]);
+          const incomingStrokeId = Number(event.strokeId);
+
+          if (incomingStrokeId && localStrokeIdsRef.current.has(incomingStrokeId)) {
+            return;
+          }
+
+          const points = Array.isArray(event.points) ? event.points : [];
+          const konvaPoints = points.flatMap((p) => [Number(p.x), Number(p.y)]);
+
+          if (konvaPoints.length < 2) return;
+
+          if (incomingStrokeId) {
+            localStrokeIdsRef.current.add(incomingStrokeId);
+          }
 
           dispatch(
             addSavedStroke({
-              id: event.strokeId || Date.now(),
+              id: incomingStrokeId || Date.now(),
               line: {
-                points: konvaPoints as any,
+                points: konvaPoints,
                 color: event.color || '#000000',
-                width: event.size || 5,
+                width: Number(event.size || 5),
                 type: 'brush',
               },
             })
           );
+
+          dispatch(
+            addHistoryEvent({
+              id: `socket-${incomingStrokeId || Date.now()}-${Math.random()}`,
+              actionText:
+                event.visitorId && event.visitorId !== visitorId
+                  ? 'Другой пользователь нарисовал штрих'
+                  : 'Нарисовал штрих',
+              time: new Date().toLocaleTimeString(),
+            })
+          );
+
           return;
         }
+
+        if (!isInfinite) return;
+
+        if (event.visitorId === visitorId) return;
 
         if (event.type === 'cursor_update') {
           const x = Number(event.x);
@@ -452,10 +487,14 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
         points: formattedPoints,
       });
 
+      if (saved.id) {
+        localStrokeIdsRef.current.add(saved.id);
+      }
+
       dispatch(addSavedStroke({ line: currentLine, id: saved.id }));
 
       try {
-        if (!isInfinite && board?.id) {
+        if (board?.id) {
           await historyApi.createAction({
             boardId,
             userId: 1,
@@ -479,19 +518,17 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
         console.warn('[DrawingBoard] История не сохранилась, но сам штрих сохранён:', historyError);
       }
 
-      if (isInfinite) {
-        sendStroke({
-          roomId: boardId,
-          visitorId,
-          strokeId: saved.id,
-          layerId: 1,
-          brushPresetId: 1,
-          color: currentLine.color,
-          size: currentLine.width,
-          opacity: 1,
-          points: formattedPoints,
-        });
-      }
+      sendStroke({
+        roomId: boardId,
+        visitorId,
+        strokeId: saved.id,
+        layerId: 1,
+        brushPresetId: 1,
+        color: currentLine.color,
+        size: currentLine.width,
+        opacity: 1,
+        points: formattedPoints,
+      });
 
       dispatch(syncPendingStrokes());
     } catch (error) {
@@ -514,9 +551,7 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, mode }) => 
         position: 'relative',
         width: isInfinite ? '100%' : boardWidth,
         height: isInfinite ? '100%' : boardHeight,
-        backgroundColor: isInfinite
-          ? board?.backgroundColor || '#ffffff'
-          : board?.backgroundColor || '#ffffff',
+        backgroundColor: board?.backgroundColor || '#ffffff',
         boxShadow: isInfinite ? 'none' : '0 4px 15px rgba(0,0,0,0.1)',
         cursor: isPanning ? 'grabbing' : 'none',
         flexShrink: 0,
