@@ -4,7 +4,7 @@ export interface Point {
 }
 
 export interface Line {
-  points: Point[];
+  points: number[];
   color: string;
   width: number;
   type: 'brush' | 'eraser';
@@ -17,6 +17,8 @@ export interface Board {
   width: number;
   height: number;
   backgroundColor: string;
+  creatorId?: string;
+  isInfinite?: boolean;
 }
 
 export interface DrawingSession {
@@ -32,7 +34,13 @@ export interface Stroke {
   layerId: number;
   color: string;
   size: number;
-  points: string;
+
+  points: Point[];
+
+  opacity?: number;
+  brushPresetId?: number;
+
+  type?: 'brush' | 'eraser';
 }
 
 export interface ActionHistoryRecord {
