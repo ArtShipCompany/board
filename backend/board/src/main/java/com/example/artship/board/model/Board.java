@@ -1,10 +1,16 @@
 package com.example.artship.board.model;
 
-import jakarta.persistence.*;
+import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "boards")
@@ -37,6 +43,12 @@ public class Board {
 
     @Column(name = "updated_at")
     private LocalDateTime updated_at;
+
+    @Column(name = "creator_id")
+    private String creatorId;
+
+    @Column(name = "is_infinite")
+    private Boolean isInfinite;
 
     public Long getId() {
         return id;
@@ -100,5 +112,21 @@ public class Board {
 
     public void setUpdated_at(LocalDateTime updated_at) {
         this.updated_at = updated_at;
+    }
+
+    public String getCreatorId() {
+        return creatorId;
+    }
+
+    public void setCreatorId(String creatorId) {
+        this.creatorId = creatorId;
+    }
+
+    public Boolean getIsInfinite() {
+        return isInfinite;
+    }
+
+    public void setIsInfinite(Boolean isInfinite) {
+        this.isInfinite = isInfinite;
     }
 }

@@ -28,6 +28,7 @@ export const boardApi = {
       width: 800,
       height: 600,
       backgroundColor: '#ffffff',
+      isInfinite: false
     });
   },
 
