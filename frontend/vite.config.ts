@@ -21,13 +21,13 @@ export default defineConfig({
 
     proxy: {
       '/api': {
-        target: 'http://backend:8080',
+        target: 'http://backend:8081',
         changeOrigin: true,
         secure: false,
       },
 
       '/ws': {
-        target: 'http://backend:8080',
+        target: 'http://backend:8081',
         changeOrigin: true,
         secure: false,
         ws: true,
