@@ -7,17 +7,34 @@ import './styles/App.css';
 function App() {
   return (
     <div className="app">
-      <header className="app-header">
-        <h1>ARTSHIP</h1>
-      </header>
       <NetworkBanner /> 
 
-      <main className="app-main">
-        <Routes>
-          <Route path="/board/:boardId" element={<BoardPage />} />
-          <Route path="/infinite-board" element={<InfiniteBoardPage />} />
-        </Routes>
-      </main>
+      <Routes>
+        <Route
+          path="/infinite-board"
+          element={
+            <>
+              <header className="app-header">
+                <h1>ARTSHIP</h1>
+              </header>
+              <InfiniteBoardPage />
+            </>
+          } />
+
+        <Route 
+          path="/board/:boardId" 
+          element={
+            <>
+              <header className="app-header">
+                <h1>ARTSHIP</h1>
+              </header>
+              <main className="app-main">
+                <BoardPage />
+              </main>
+            </>
+          } 
+        />
+      </Routes>
     </div>
   );
 }

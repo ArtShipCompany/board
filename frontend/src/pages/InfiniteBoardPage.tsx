@@ -5,13 +5,15 @@ import './InfiniteBoardPage.css';
 import { ActionHistoryWidget } from '../components/ActionHistory/ActionHistoryWidget';
 
 const InfiniteBoardPage: React.FC = () => {
+  const INFINITE_BOARD_ID = 1; 
+
   return (
     <div className="infinite-board-page">
       <div className="toolbar-container">
         <Toolbar />
       </div>
       
-      <DrawingBoard isInfinite={true} /> 
+      <DrawingBoard boardId={INFINITE_BOARD_ID} isInfinite={true} />
       <ActionHistoryWidget />
     </div>
   );

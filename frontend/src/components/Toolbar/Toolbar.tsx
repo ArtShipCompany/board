@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../../store';
-import { setTool, setColor, setBrushSize, undo, clear } from '../../store/drawingSlice';
+import { setTool, setColor, setBrushSize, undoLastStroke, clearCanvas } from '../../store/drawingSlice';
 import { logAction } from '../../store/historySlice';
 import { historyApi } from '../../api/historyApi';
 import './Toolbar.css';
@@ -68,8 +68,8 @@ const Toolbar: React.FC = () => {
   };
 
   const handleClear = async () => {
-    if (window.confirm('Вы уверены, что хотите очистить слой?')) {
-      dispatch(clear());
+    if (window.confirm('Вы уверены, что хотите очистить холст?')) {
+      dispatch(clearCanvas());
       if (board?.id) {
         await historyApi.createAction({
           boardId: board.id,
@@ -82,7 +82,7 @@ const Toolbar: React.FC = () => {
   };
 
   const handleUndo = async () => {
-    dispatch(undo());
+    dispatch(undoLastStroke());
     if (board?.id) {
       await historyApi.createAction({
         boardId: board.id,

@@ -86,6 +86,42 @@ export const initBoard = createAsyncThunk('drawing/initBoard', async (boardId: n
   };
 });
 
+export const undoLastStroke = createAsyncThunk(
+  'drawing/undoLastStroke',
+  async (_, { getState, dispatch }) => {
+    const state = getState() as any;
+    const { strokeIds } = state.drawing;
+
+    if (strokeIds.length === 0) return;
+
+    const lastStrokeId = strokeIds[strokeIds.length - 1];
+
+    try {
+      await strokeApi.deleteStroke(lastStrokeId);
+    } catch (err) {
+      console.warn(`[Undo] Не удалось удалить штрих ${lastStrokeId} на сервере (возможно, его там нет), удаляем локально.`);
+    } finally {
+      dispatch(drawingSlice.actions.localUndo());
+    }
+  }
+);
+
+export const clearCanvas = createAsyncThunk(
+  'drawing/clearCanvas',
+  async (_, { getState, dispatch }) => {
+    const state = getState() as any;
+    const { sessionId } = state.drawing;
+
+    if (!sessionId) return;
+
+    try {
+      dispatch(drawingSlice.actions.localClear());
+    } catch (err) {
+      console.error('Не удалось очистить холст:', err);
+    }
+  }
+);
+
 const drawingSlice = createSlice({
   name: 'drawing',
   initialState,
@@ -96,7 +132,6 @@ const drawingSlice = createSlice({
       state.currentLine = null;
       state.sessionId = null;
       state.board = null;
-      state.pendingStrokes = [];
     },
     setTool: (state, action: PayloadAction<'brush' | 'eraser'>) => {
       state.tool = action.payload;
@@ -127,11 +162,11 @@ const drawingSlice = createSlice({
       state.lines.push(action.payload.line);
       state.strokeIds.push(action.payload.id);
     },
-    undo: (state) => {
+    localUndo: (state) => {
       state.lines.pop();
       state.strokeIds.pop();
     },
-    clear: (state) => {
+    localClear: (state) => {
       state.lines = [];
       state.strokeIds = [];
       state.currentLine = null;
@@ -195,5 +230,5 @@ export const syncPendingStrokes = createAsyncThunk(
   }
 );
 
-export const { setTool, setColor, setBrushSize, startDrawing, draw, stopDrawing, addSavedStroke, undo, clear, queueStroke, removeFromQueue, resetDrawing } = drawingSlice.actions;
+export const { setTool, setColor, setBrushSize, startDrawing, draw, stopDrawing, addSavedStroke, resetDrawing, queueStroke, removeFromQueue } = drawingSlice.actions;
 export default drawingSlice.reducer;

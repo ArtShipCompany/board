@@ -1,10 +1,6 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const HOST = window.location.hostname;
-
-const WS_URL = import.meta.env.VITE_WS_URL || `http://${HOST}:8081/ws`;
-
 export type WsEventType =
     | 'visitor_joined'
     | 'visitor_left'
@@ -46,7 +42,7 @@ export function connectDrawingSocket(params: {
     const { roomId, visitorId, visitorName, color, onEvent, onConnected, onDisconnected } = params;
 
     client = new Client({
-        webSocketFactory: () => new SockJS(WS_URL),
+        webSocketFactory: () => new SockJS('/ws'),
         reconnectDelay: 3000,
         onConnect: () => {
             console.log('[WS] connected');

@@ -1,7 +1,6 @@
 import { ActionHistoryRecord } from '../types/drawing';
 
-const HOST = window.location.hostname;
-const API_BASE_URL = `http://${HOST}:8081/api`;
+const API_BASE_URL = `/api`;
 
 export const historyApi = {
   async getBoardHistory(boardId: number): Promise<ActionHistoryRecord[]> {

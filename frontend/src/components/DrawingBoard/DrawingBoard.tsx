@@ -313,7 +313,7 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
     }
 
     const now = Date.now();
-    if (now - lastCursorSentAtRef.current > 75) {
+    if (now - lastCursorSentAtRef.current > 120) {
       lastCursorSentAtRef.current = now;
       sendCursor({
         roomId: boardId,
@@ -432,6 +432,8 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
               tension={0.5}
               lineCap="round"
               lineJoin="round"
+              perfectDrawEnabled={false}
+              listening={false}
               globalCompositeOperation={
                 line.type === 'eraser' ? 'destination-out' : 'source-over'
               }
