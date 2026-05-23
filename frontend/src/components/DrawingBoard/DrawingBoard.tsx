@@ -114,19 +114,19 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
   }, [visitorId]);
 
   useEffect(() => {
-    dispatch(initBoard(boardId));
-  }, [boardId, dispatch]);
-
-  useEffect(() => {
-    dispatch(resetDrawing());
-    dispatch(initBoard(boardId));
-  }, [boardId, dispatch]);
-
-  useEffect(() => {
     if (board?.id && visitorId) {
       dispatch(loadHistoryFromDB({ boardId: board.id, visitorId }));
     }
   }, [board?.id, visitorId, dispatch]);
+
+  useEffect(() => {
+    if (board?.width && board?.height) {
+      setDimensions({
+        width: board.width,
+        height: board.height
+      });
+    }
+  }, [board?.width, board?.height]);
 
   useEffect(() => {
     const updateDimensions = () => {
@@ -140,6 +140,11 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
   }, []);
 
   useEffect(() => {
+    if (!isInfinite) {
+      console.log('[DrawingBoard] Single player mode - no socket connection');
+      return () => { };
+    }
+
     const disconnect = connectDrawingSocket({
       roomId: boardId,
       visitorId,
@@ -151,7 +156,6 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
             return;
           }
         }
-
 
         if (event.type === 'room_full') {
           alert('Комната заполнена. Максимум 10 участников.');
@@ -207,7 +211,7 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
       },
     });
     return () => disconnect();
-  }, [dispatch, visitorId, visitorName, visitorColor]);
+  }, [dispatch, visitorId, visitorName, visitorColor, boardId, isInfinite]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -420,7 +424,9 @@ export const DrawingBoard: React.FC<DrawingBoardProps> = ({ boardId, isInfinite 
         onTouchStart={handleMouseDown}
         onTouchMove={handleMouseMove}
         onTouchEnd={handleMouseUp}
-        style={{ backgroundColor: 'white' }}
+        style={{
+          backgroundColor: board?.backgroundColor || 'white'
+        }}
       >
         <Layer x={panOffset.x / scale} y={panOffset.y / scale}>
           {lines.map((line, i) => (

@@ -14,45 +14,63 @@ export const BoardPage = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     const numericBoardId = boardId ? Number(boardId) : 0;
+    const board = useSelector((state: RootState) => state.drawing.board);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     useEffect(() => {
-        if (boardId && Number(boardId) !== 0) {
+        if (numericBoardId !== 0) {
             dispatch(resetDrawing());
             dispatch(initBoard(numericBoardId));
         }
     }, [numericBoardId, dispatch]);
 
-    const board = useSelector((state: RootState) => state.drawing.board);
-    const [isModalOpen, setIsModalOpen] = useState(false);
-
-    useEffect(() => {
-        if (boardId) {
-            dispatch(resetDrawing());
-            dispatch(initBoard(numericBoardId));
-        }
-    }, [boardId, dispatch]);
-
     const handleSaveBoard = async (newData: any) => {
         if (!board) return;
         await boardApi.updateBoard(board.id, newData);
-        window.location.reload(); 
+        window.location.reload();
     };
 
-    if (!board) return <div>Загрузка доски...</div>;
+    if (!board) return (
+        <div style={{ padding: '50px', textAlign: 'center' }}>
+            <h2>Загрузка доски...</h2>
+            <p>Если загрузка идет слишком долго, проверь вкладку Network (F12).</p>
+        </div>
+    );
 
     return (
         <>
-        <button onClick={() => setIsModalOpen(true)}>Настройки доски</button>
-        
-        <BoardSettingsModal 
-            isOpen={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            board={board} 
-            onSave={handleSaveBoard}
-        />
+            <div style={{
+                position: 'fixed',
+                top: 20,
+                right: 20,
+                zIndex: 1000
+            }}>
+                <button
+                    onClick={() => setIsModalOpen(true)}
+                    style={{
+                        padding: '8px 16px',
+                        background: '#2196F3',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '14px'
+                    }}
+                >
+                    ⚙️
+                </button>
+            </div>
 
-        <Toolbar />
-        <DrawingBoard boardId={numericBoardId} isInfinite={false} />
-        <ActionHistoryWidget />
+            <BoardSettingsModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                board={board}
+                onSave={handleSaveBoard}
+            />
+
+            <Toolbar />
+            <DrawingBoard boardId={numericBoardId} isInfinite={false} />
+            <ActionHistoryWidget />
         </>
-  );
+    );
 };

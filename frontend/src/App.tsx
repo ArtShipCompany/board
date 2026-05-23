@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import { HomePage } from './pages/HomePage';
 import { BoardPage } from './pages/BoardPage';
 import InfiniteBoardPage from './pages/InfiniteBoardPage';
 import NetworkBanner from './components/NetworkBanner/NetworkBanner';
@@ -10,12 +11,14 @@ function App() {
       <NetworkBanner /> 
 
       <Routes>
+        <Route path="/" element={<HomePage />} />
+
         <Route
           path="/infinite-board"
           element={
             <>
               <header className="app-header">
-                <h1>ARTSHIP</h1>
+                <h1>ARTSHIP (Мультиплеер)</h1>
               </header>
               <InfiniteBoardPage />
             </>
@@ -26,7 +29,7 @@ function App() {
           element={
             <>
               <header className="app-header">
-                <h1>ARTSHIP</h1>
+                <h1>ARTSHIP (Одиночная)</h1>
               </header>
               <main className="app-main">
                 <BoardPage />
