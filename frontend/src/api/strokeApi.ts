@@ -1,7 +1,6 @@
 import { Stroke, Point } from '../types/drawing';
 
-const HOST = window.location.hostname;
-const API_BASE_URL = `http://${HOST}:8081/api`;
+const API_BASE_URL = `/api`;
 
 export type CreateStrokeInput = Omit<Stroke, 'id' | 'points'> & {
   points: Point[];
@@ -83,4 +82,15 @@ export const strokeApi = {
 
     return true;
   },
+
+  async clearSessionStrokes(sessionId: number): Promise<boolean> {
+    const res = await fetch(`${API_BASE_URL}/strokes/session/${sessionId}`, {
+      method: 'DELETE',
+    });
+    if (!res.ok) {
+      console.error('[strokeApi] failed to clear session');
+      throw new Error('Не удалось очистить холст на сервере');
+    }
+    return true;
+  }
 };

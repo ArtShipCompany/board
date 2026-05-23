@@ -1,20 +1,15 @@
 import { Board } from '../types/drawing';
 
-const HOST = window.location.hostname;
-const API_BASE_URL = `http://${HOST}:8081/api`;
-const BOARD_ID = 1;
+const API_BASE_URL = `/api`;
 
 export const boardApi = {
-  async getMyBoard() {
-    const response = await fetch(`${API_BASE_URL}/boards/${BOARD_ID}`, {
-      headers: {
-        'Accept': 'application/json'
-      }
+  async getBoardById(boardId: number) {
+    const response = await fetch(`${API_BASE_URL}/boards/${boardId}`, {
+      headers: { 'Accept': 'application/json' }
     });
 
     if (response.status === 404) {
-      console.log('Board not found, creating new one');
-      return this.createEmptyBoard();
+      return null;
     }
 
     if (!response.ok) {

@@ -1,10 +1,6 @@
 import { Client, IMessage } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 
-const HOST = window.location.hostname;
-
-const WS_URL = import.meta.env.VITE_WS_URL || `http://${HOST}:8081/ws`;
-
 export type WsEventType =
     | 'visitor_joined'
     | 'visitor_left'
@@ -15,7 +11,7 @@ export type WsEventType =
 
 export type DrawingSocketEvent = {
     type: string;
-    roomId?: string;
+    roomId?: number;
     visitorId?: string;
     visitorName?: string;
     color?: string;
@@ -35,7 +31,7 @@ export type DrawingSocketEvent = {
 let client: Client | null = null;
 
 export function connectDrawingSocket(params: {
-    roomId: string;
+    roomId: number;
     visitorId: string;
     visitorName: string;
     color: string;
@@ -46,7 +42,7 @@ export function connectDrawingSocket(params: {
     const { roomId, visitorId, visitorName, color, onEvent, onConnected, onDisconnected } = params;
 
     client = new Client({
-        webSocketFactory: () => new SockJS(WS_URL),
+        webSocketFactory: () => new SockJS('/ws'),
         reconnectDelay: 3000,
         onConnect: () => {
             console.log('[WS] connected');
@@ -90,7 +86,7 @@ export function connectDrawingSocket(params: {
 }
 
 export function sendJoinRoom(payload: {
-    roomId: string;
+    roomId: number;
     visitorId: string;
     visitorName: string;
     color: string;
@@ -102,7 +98,7 @@ export function sendJoinRoom(payload: {
 }
 
 export function sendLeaveRoom(payload: {
-    roomId: string;
+    roomId: number;
     visitorId: string;
 }) {
     publish(`/app/room/${payload.roomId}/leave`, {
@@ -112,7 +108,7 @@ export function sendLeaveRoom(payload: {
 }
 
 export function sendStroke(payload: {
-    roomId: string;
+    roomId: number;
     visitorId: string;
     strokeId?: number;
     layerId: number;
@@ -129,7 +125,7 @@ export function sendStroke(payload: {
 }
 
 export function sendCursor(payload: {
-    roomId: string;
+    roomId: number;
     visitorId: string;
     x: number;
     y: number;
